@@ -1,9 +1,9 @@
 /*
- * $Id: sopt.c,v 1.3 1999/08/10 15:28:42 james Exp $
+ * $Id: sopt.c,v 1.4 2000/01/02 23:05:01 james Exp $
  * sopt.c
  *
  * Implementation of coopt_sopt(), utility routine for coopt.
- * (c) Copyright James Aylett 1999
+ * (c) Copyright James Aylett 1999-2000
  */
 
 #include <stdio.h>

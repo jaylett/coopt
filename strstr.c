@@ -1,11 +1,11 @@
 /*
- * $Id: strstr.c,v 1.2 1999/06/03 13:18:41 james Exp $
+ * $Id: strstr.c,v 1.3 2000/01/02 23:05:01 james Exp $
  * strstr.c
- * 
+ *
  * Our implementation of strstr(), because we can't guarantee that's
  * either there or sane. Returns a pointer to the start of the substring,
  * or NULL if the substring is not found.
- * (c) Copyright James Aylett 1999
+ * (c) Copyright James Aylett 1999-2000
  */
 
 #include <stdio.h>
@@ -22,7 +22,7 @@ char *strstr(char const *haystack, char const *needle)
       i++;
     if (needle[i]==0)
       return (char *)haystack;
-    
+
     haystack++;
   }
   return (char *)(NULL);

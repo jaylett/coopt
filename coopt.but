@@ -1,13 +1,17 @@
-\# $Id: coopt.but,v 1.1 1999/09/07 13:49:36 james Exp $
 \# coopt.but
 \#
 \# Documentation source for coopt
-\# (c) Copyright James Aylett 1999
+\# (c) Copyright James Aylett 2000
+
+\versionid $Id: coopt.but,v 1.2 2000/01/02 23:05:00 james Exp $
+
+\define{coopt} co\u00F6{o}pt
+
+\title coopt: option parsing library
+
+\copyright Copyright 2000 James Aylett. All Rights Reserved.
 
 \C{Introduction} Introduction
-
-\# Following line allows us to use \coopt subsequently.
-\define{coopt}{co\u00F6{o}pt}
 
 \H{whatiscoopt} What is \coopt?
 
@@ -129,7 +133,7 @@ their being a \c{NULL} member at the end of the \c{argv} array).
 
 \c struct coopt_return ret;
 \c struct coopt_state state;
-\c struct coopt_option * options[] =
+\c struct coopt_option options[] =
 \c {
 \c   { 'f', COOPT_REQUIRED_PARAM, "file" },
 \c   { 'v', COOPT_NO_PARAM, "version" },
@@ -150,7 +154,7 @@ their being a \c{NULL} member at the end of the \c{argv} array).
 \c {
 \c   char buf[256];
 \c   coopt_serror(buf, 256, &ret, &state);
-\c   fprintf(stderr, "%s: %s", progname, buf);
+\c   fprintf(stderr, "%s: %s\n", progname, buf);
 \c   exit(1);
 \c }
 
@@ -681,11 +685,12 @@ Unfortunately, because they desired backwards compatibility with the POSIX
 involves global state (which means that it may not be able to be used in a
 multi-threaded environment without jumping through hoops).
 
-\# FIXME: check that ANSI says what I think it says about argv here
 They also lifted the restriction on arguments being interspersed with
-options; however they did so in a rather brutal method which breaks the ANSI
-C specification (basically, they require the ability to permute the elements
-of \c{argv}).
+options; however the method they used to do so results in the elements of
+\c{argv} being permuted, which isn't the nicest solution. In particular, you
+can't subsequently recover the entire command line if you need it for some
+reason (for instance for error reporting: instead, you need to copy the
+whole lot before you start processing).
 
 In addition, although GNU \c{getopt()} has been ported to many platforms, it
 was designed for Unix, and so provides an interface to the end-user (ie: the
@@ -716,15 +721,23 @@ Again, it is limited in its reconfigurability.
 \S{faq-whynotpopt} Why not use \c{popt}?
 
 \# FIXME: check origins
+
 \c{popt} is another GNU options parsing library, written (I believe) for the
 GNOME desktop project. It is designed substantially differently to the other
-options parsing libraries listed above
+options parsing libraries listed above, in that you call a single function
+to process the command line, rather than calling a simpler function
+repeatedly in a loop. This makes it difficult to change processing
+conventions part way through a command line (for instance, GCC uses the \c{-x
+<language>} parameter to manually determine the programming language of
+subsequent source files).
 
 \S{faq-howcani) How do I ... ?
 
 See the HOWTO section of the manual, in \k{howto}.
 
 \S{faq-obtaining} How do I get \coopt?
+
+\# This doesn't exist. So, erm ... sort something out somewhere.
 
 The official \coopt web site is
 \W{http://www.tartarus.org/projects/coopt/}{http://www.tartarus.org/projects/coopt/}.

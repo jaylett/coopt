@@ -1,9 +1,9 @@
 /*
- * $Id: serror.c,v 1.2 1999/09/07 13:49:36 james Exp $
+ * $Id: serror.c,v 1.3 2000/01/02 23:05:01 james Exp $
  * serror.c
- * 
+ *
  * Implementation of coopt_serror(), utility routine for coopt.
- * (c) Copyright James Aylett 1999
+ * (c) Copyright James Aylett 1999-2000
  */
 
 #include <stdio.h>
@@ -32,7 +32,7 @@
 #define str_MULTIMIXED "More than one parameter required in a block of short options"
 #define str_AMBIGUOUSOPT "Ambiguous abbreviation "
 #define str_BADOPTION "Unknown option "
-#define str_NOPARAM "Required parameter ommited for "
+#define str_NOPARAM "Required parameter omitted for "
 #define str_MISSINGPARAM str_NOPARAM
 #define str_OKAYARG "Argument "
 #define str_OKAYOPT "Option "
@@ -43,10 +43,10 @@ size_t coopt_serror(char *buffer, size_t bufsize, struct coopt_return *ret,
 {
   size_t written=0;
   buffer[0]=0;
-  
+
   if (ret==NULL || state==NULL)
     return written; /* illegally called */
-  
+
   switch (ret->result)
   {
    case COOPT_RESULT_ERROR:

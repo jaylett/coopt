@@ -1,9 +1,9 @@
 /*
- * $Id: coopt.c,v 1.2 1999/06/03 13:18:40 james Exp $
+ * $Id: coopt.c,v 1.3 2000/01/02 23:05:00 james Exp $
  * coopt.c
  *
  * Implementation file for coopt, the Tartarus option parsing library
- * (c) Copyright James Aylett 1999
+ * (c) Copyright James Aylett 1999-2000
  *
  * Additional design and assistance: Simon Tatham, Ben Harris, Owen Dunn,
  * Chris Emerson

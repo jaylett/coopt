@@ -1,9 +1,9 @@
 /*
- * $Id: coopt.h,v 1.3 1999/08/10 15:28:42 james Exp $
+ * $Id: coopt.h,v 1.4 2000/01/02 23:05:00 james Exp $
  * coopt.h
  *
  * Interface header file for coopt, the Tartarus option parsing library
- * (c) Copyright James Aylett 1999
+ * (c) Copyright James Aylett 1999-2000
  *
  * Plus points over getopt:
  *   all memory handled by the user
@@ -19,7 +19,7 @@
  *   'private' field per option, making sophisticated option dispatch easier
  *
  * Plus points over GNU getopt:
- *   obeys POSIX: argv is const
+ *   argv is const
  *   porting not required (hopefully) - some GNU getopt ports are incomplete
  *   BSD license, so re-licensable
  *

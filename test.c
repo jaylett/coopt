@@ -1,9 +1,9 @@
 /*
- * $Id: test.c,v 1.2 1999/06/03 13:18:41 james Exp $
+ * $Id: test.c,v 1.3 2000/01/02 23:05:01 james Exp $
  * test.c
  *
  * coopt test rig
- * (c) Copyright James Aylett 1999
+ * (c) Copyright James Aylett 1999-2000
  *
  * 1. short options
  * 2. long options

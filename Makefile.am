@@ -10,8 +10,6 @@ lib_LIBRARIES = libcoopt.a
 
 pkginclude_HEADERS = coopt.h
 
-noinst_PROGRAMS = test
-
 ## --- Things to put in the library ---
 
 libcoopt_a_SOURCES = coopt.c sopt.c serror.c
@@ -25,10 +23,10 @@ LDADDS = $(top_builddir)/libcoopt.a
 
 ## --- Test suite ---
 
+check_PROGRAMS = test
 test_SOURCES = test.c
 test_LDFLAGS = 
 test_DEPENDENCIES = $(DEPS)
 test_LDADD = $(LDADDS)
 
-check: test
-	./test
+TESTS = test
