@@ -8,7 +8,12 @@ AUTOMAKE_OPTIONS = foreign
 
 lib_LIBRARIES = libcoopt.a
 
+## --- Things to install ---
+
 include_HEADERS = coopt.h
+
+m4datadir = $(datadir)/aclocal
+m4data_DATA = libcoopt.m4
 
 ## --- Things to put in the library ---
 

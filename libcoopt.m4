@@ -115,8 +115,15 @@ if test "x$LIBCOOPT_EXEC_PATH" = "x"; then
   fi
 fi
 
-echo "LIBCOOPT_INCLUDE_PATH=$LIBCOOPT_INCLUDE_PATH"
-echo "LIBCOOPT_EXEC_PATH=$LIBCOOPT_EXEC_PATH"
+dnl If paths aren't absolute, complain
+case $LIBCOOPT_INCLUDE_PATH in
+ /*) ;;
+ *) AC_MSG_ERROR(Paths specified for libcoopt must be absolute) ;;
+esac
+case $LIBCOOPT_EXEC_PATH in
+ /*) ;;
+ *) AC_MSG_ERROR(Paths specified for libcoopt must be absolute) ;;
+esac
 
 dnl Check files exist - if either doesn't, unset both variables
 if test -r "$LIBCOOPT_INCLUDE_PATH/coopt.h"; then
@@ -132,7 +139,8 @@ else
 fi
 
 dnl If not specified (or didn't exist), give a warning
-if test "x$LIBCOOPT_INCLUDE_PATH" = "x" || "x$LIBCOOPT_EXEC_PATH" = "x"; then
+if test "x$LIBCOOPT_INCLUDE_PATH" = "x" ||
+   test "x$LIBCOOPT_EXEC_PATH" = "x"; then
   AC_MSG_WARN(Couldn't find coopt)
 fi
 
