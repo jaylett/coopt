@@ -117,12 +117,14 @@ if test "x$LIBCOOPT_EXEC_PATH" = "x"; then
 fi
 
 dnl If paths aren't absolute, complain
-case $LIBCOOPT_INCLUDE_PATH in
- /*) ;;
+case "x$LIBCOOPT_INCLUDE_PATH" in
+ x) ;;
+ x/*) ;;
  *) AC_MSG_ERROR(Paths specified for libcoopt must be absolute) ;;
 esac
-case $LIBCOOPT_EXEC_PATH in
- /*) ;;
+case "x$LIBCOOPT_EXEC_PATH" in
+ x) ;;
+ x/*) ;;
  *) AC_MSG_ERROR(Paths specified for libcoopt must be absolute) ;;
 esac
 
