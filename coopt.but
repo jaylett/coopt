@@ -1,0 +1,747 @@
+\# $Id: coopt.but,v 1.1 1999/09/07 13:49:36 james Exp $
+\# coopt.but
+\#
+\# Documentation source for coopt
+\# (c) Copyright James Aylett 1999
+
+\C{Introduction} Introduction
+
+\# Following line allows us to use \coopt subsequently.
+\define{coopt}{co\u00F6{o}pt}
+
+\H{whatiscoopt} What is \coopt?
+
+\coopt is a command line option parsing library; it fulfills the same basic
+role as \i\c{getopt()} in POSIX.2 compliant Unices, while providing
+considerable added functionality. There are other libraries available which
+attempt to do the same, the best known being GNU's \c{getopt()} replacement,
+which adds some much needed functionality to the POSIX specification; for a
+list of pros and cons of several libraries which implement options parsing,
+see \k{alternatives}.
+
+\H{terms} Terms and concepts
+
+\# FIXME
+"command element array"
+arguments and options
+short and long options
+parameters
+POSIX separator
+
+\C{Installing} Installing \coopt
+
+\H{source} From source
+
+\coopt comes as a gzipped tar file containing a directory \c{coopt/} which
+contains the \coopt source. You should unpack the archive, enter the
+directory it creates, and configure and build \coopt as normal. Something
+like:
+
+\c tar xvzf coopt.tgz
+\c cd coopt/
+\c ./configure && make && make install
+
+The \c{&& make install} part at the end may be omitted if you don't want to
+install \coopt for general use, but merely want to build against it
+yourself.
+
+\coopt will install in \c{/usr} by default (which will probably require
+\c{root} access); however \coopt's \c{configure} script is a normal GNU one,
+and so you can alter the install prefix using the \c{--prefix} option. For
+instance:
+
+\c ./configure --prefix=/usr/local
+
+You should use \c{./configure --help} for a complete list of options supported.
+
+\H{cvs} From CVS source
+
+If you either download a CVS development snapshot (which comes as a gzipped
+tar file), or grab \coopt directly from the CVS tree, you will get a
+\c{coopt/} directory in its maintainer-clean state. In order to build
+\coopt, you will need to create a Makefile, using \c{automake}, and a
+\c{configure} script, using \c{autoconf}. Something like:
+
+\c automake && autoconf && ./configure && make && make install
+
+\H{packages} Packages
+
+Currently, \coopt isn't available packaged for any systems. However this
+shouldn't cause too much problems, although I plan to at least package it
+for Debian at some point.
+
+\C{Basic} Basic use
+
+\H{building} Building \coopt
+
+In order to use \coopt, you need to pass certain options to your compiler
+and linker while building your program. The compiler will need to know where
+to find the \c{coopt.h} header file, which contains the function prototypes
+and structure definitions needed, and the linker will need to know to link
+in the \c{libcoopt.a} library which contains the \coopt routines.
+
+By default, \coopt will be installed with the header file in
+\c{/usr/include/libcoopt/}, and the library in \c{/usr/lib/}. If you have
+overridden this, or your system administrator has installed \coopt in a
+different place, you will have to adapt the following to your situation.
+
+\S{compiler} Compiler
+
+Typically, your compiler will look in \c{/usr/include/} for header files, so
+one way of including the header file is to use:
+
+\c #include <libcoopt/coopt.h>
+
+Alternatively, you could set your compiler to search
+\c{/usr/include/libcoopt/} for header files, and simply use:
+
+\c #include <coopt.h>
+
+For GNU \c{gcc}, \c{-I /usr/include/libcoopt/} should do the trick.
+
+\S{linker} Linker
+
+\# FIXME
+You need to tell your linker to link in \c{libcoopt.a}; typically this will
+be done by appending \c{-lcoopt} to the linker command line. However you may
+need to consider the order of libraries linked in, which is something I
+never really pay attention to, but ought to.
+
+\H{calling} Calling \coopt
+
+\coopt is set up by a single function, \c{coopt_init()}, and called via a
+single function, \c{coopt()}, which processes the next option or argument in
+the command array. In order to use it, you need to set up an array of
+\c{struct coopt_option} structures defining the options \coopt will
+recognise, and supply a \c{struct coopt_state} structure for \coopt to store
+its current state in.
+
+\coopt also contains a couple of support functions which make error
+reporting easier.
+
+\S{code-fragment} Sample code fragment
+
+The following code fragment will do this, supplying three basic options;
+\c{argc} and \c{argv} are assumed to be either the parameters passed to
+\c{main()}, or a pair of variables that are set up in a similar way. (\coopt
+uses \c{argc} to calculate the length of \c{argv}, rather than relying on
+their being a \c{NULL} member at the end of the \c{argv} array).
+
+\c struct coopt_return ret;
+\c struct coopt_state state;
+\c struct coopt_option * options[] =
+\c {
+\c   { 'f', COOPT_REQUIRED_PARAM, "file" },
+\c   { 'v', COOPT_NO_PARAM, "version" },
+\c   { 'h', COOPT_NO_PARAM, "help" }
+\c };
+\c
+\c coopt_init(&state, options, sizeof(options) / sizeof(struct coopt_option),
+\c            argc-1, argv+1);
+\c do
+\c {
+\c   ret = coopt(&state);
+\c   if (!coopt_is_error(ret.result))
+\c   {
+\c     /* process ret.opt */
+\c   }
+\c } while (coopt_is_okay(ret.result));
+\c if (coopt_is_error(ret.result))
+\c {
+\c   char buf[256];
+\c   coopt_serror(buf, 256, &ret, &state);
+\c   fprintf(stderr, "%s: %s", progname, buf);
+\c   exit(1);
+\c }
+
+\S{step-by-step} Step by step view of \coopt
+
+Now we will go through the different parts of \coopt, one by one.
+
+\S2{coopt-option} \c{struct coopt_option}
+
+When you initialise \coopt (see \k{coopt-init} below), you must pass it an
+array of \c{struct coopt_option} members, each of which defines one option
+that \coopt will recognise and parse for you.
+
+\c struct coopt_option
+\c {
+\c   char short_option; /* 0 if no short equivalent */
+\c   unsigned int has_param; /* COOPT_NO_PARAM or COOPT_REQUIRED_PARAM only. */
+\c   char const * long_option; /* full text of long option */
+\c   void * private; /* can leave out completely in initialiser;
+\c                    * this is private to the user - coopt won't touch it
+\c                    */
+\c };
+
+\c{short_option} should contain either \c{0}, or the character used to
+select this option when used as a short option (eg: the \c{h} in \c{-h});
+
+\c{long_option} should be \c{NULL}, or point to the string used to select
+this option when used as a long option (eg: the \c{help} in \c{--help}).
+
+If \c{short_option} is \c{0} and \c{long_option} is \c{NULL}, the option is
+considered to be invalid, and is ignored. Note that it is still included in
+the \c{num_options} count passed to \c{coopt_init()}.
+
+\c{has_param} should be either \c{COOPT_NO_PARAM} if the option takes no
+parameter, or \c{COOPT_REQUIRED_PARAM} if it takes one parameter. Unlike
+some options libraries, \coopt does not directly support optional
+parameters, although it does allow you to implement them with fairly minimal
+effort on your part. See \k{howto-optional-params} for information on how to
+do this.
+
+\c{private} is a private field for your use; \coopt will ignore it
+completely. You can use it to pass additional information about this option
+to your handling routines; for instance, you might want to put a function
+pointer in here to enable several options to be parsed by the same code,
+calling different functions for a particular section. See \k{Funky stuff}
+for some examples of where this might be useful.
+
+\S2{coopt-init} \c{coopt_init()}
+
+Once you have set up your options array, you pass it and some other
+information to \c{coopt_init()}.
+
+\c void coopt_init(struct coopt_state * /*state*/,
+\c                 struct coopt_option const * /*options*/,
+\c                 unsigned int /*num_options*/,
+\c                 int /*argc*/, char const * const * /*argv*/);
+
+\c{state} should be a pointer to a \c{struct coopt_state} structure;
+\c{coopt_init()} will initialise this for you. \c{options} should be the
+options array you set up earlier, and \c{num_options} the number of options
+in it. \c{argc} and \c{argv} are the number of elements of the command
+array, and the command array itself.
+
+Note that when you are using \coopt to parse a command line which was passed
+to your program through \c{main()}, you should skip the first element of
+\c{argv} (namely the program invocation name) by incrementing \c{argv} and
+decrementing \c{argc} before passing them to \c{coopt_init()}. If you don't,
+the program invocation name will be returned by \c{\coopt()} as an argument.
+
+\c{coopt_init()} will set up \c{state} to give default behaviour; the
+default short and long option markers, POSIX separator and long parameter
+separator are used, and the following option defaults are set up:
+
+\b long options with both inline and separated parameters are allowed
+
+\b abbreviated long options aren't allowed
+
+\b multiple short options in one command element (eg: \c{-hvs}) cannot contain options which take parameters
+
+You can change these settings by altering \c{state} after it has been
+initialised by \c{coopt_init()}; see \k{coopt-state} for more information.
+
+\S2{coopt-coopt} \c{coopt()}
+
+The main work of \coopt is done by repeatedly calling \c{coopt()}, which
+will parse the next option or element in the command array.
+
+\c struct coopt_return coopt(struct coopt_state * /*state*/);
+
+\c{state} should be the state structure you initialised using
+\c{coopt_init()} (and possibly customised yourself) earlier. \c{coopt()}
+returns a \c{coopt_return} structure which tells you the option or argument
+that \coopt found, or gives information about an error if one occured during
+processing.
+
+\S3{coopt-return} \c{struct coopt_return}
+
+What happened during each call to \c{coopt()} can be determined by the value
+of the \c{result} field of the \c{coopt_return} structure. It will be one of
+four types: fatal error, non-fatal error, okay, and termination. There are
+macros defined in \c{coopt.h} which tell you which type it is:
+
+\b \c{coopt_is_error()} is true if an error occured during processing
+
+\b \c{coopt_is_fatal()} is true if it was a fatal error (you should not attempt to continue processing)
+
+\b \c{coopt_is_nonfatal()} is true if it was a non-fatal error (you may choose to continue processing)
+
+\b \c{coopt_is_okay()} is true if an option or argument was successfully parsed
+
+\b \c{coopt_is_termination()} is true if a termination case was encountered
+
+Termination cases are situations where there now aren't any more options or
+arguments to parse, because the end of the command element array has been
+reached. Repeatedly calling \c{coopt()} afterwards will always return
+\c{COOPT_RESULT_END}.
+
+\c struct coopt_return
+\c {
+\c   int result; /* see below */
+\c   int ambigresult; /* if result==COOPT_RESULT_AMBIGUOUSOPT, this will contain
+\c                     * COOPT_RESULT_OKAY, or an error code relating to parameter
+\c                     * processing. We don't advise allowing ambiguous options
+\c                     * (abbreviated long options where more than one long option
+\c                     * matches what was given), but this allows you to do
+\c                     * complete processing on them if you really want.
+\c                     */
+\c   struct coopt_option const * opt; /* NULL on _END and on argument
+\c                                     * (param -> argument)
+\c                                     * Also NULL for BADOPTION, in which case
+\c                                     * param -> what looked like the option
+\c                                     * (may include an eq-separated param; use
+\c                                     * coopt_sopt() to extract just the 'option')
+\c                                     */
+\c   char const * param; /* pointer to the parameter for this option (or NULL) */
+\c   char const * marker; /* pointer to the marker definition (eg: "L--") that
+\c                         * was used for this option (or NULL)
+\c                         */
+\c };
+
+\c{opt} will either point to the option that was parsed (or that generated
+an error during parsing), or contain \c{NULL} in the case of an argument (in which case
+\c{param} will point to the argument text) or an unrecognised option (in
+which case \c{param} will point to the option text). \c{param}, except in
+the cases just listed, will contain be \c{NULL}  or point to the text of the
+parameter to the parsed option.
+
+\c{marker} is a pointer to the marker definition used for this option (see
+\k{coopt-state-markers}), or \c{NULL} if an argument was found. Particularly
+important is that the first character of the string pointer to by \c{marker}
+will be \c{S} if it was a short option, or \c{L} if it was a long option.
+
+We will now examine each case in detail.
+
+\S4{coopt-result-error} \c{COOPT_RESULT_ERROR}
+
+This is returned on an unspecified error. Typically \c{coopt()} will have
+been called incorrectly, or the \c{coopt_state} structure has been
+corrupted. You may also get this returned if \coopt itself went wrong.
+
+This is a fatal error.
+
+\S4{coopt-result-hadparam} \c{COOPT_RESULT_HADPARAM}
+
+This is returned when a long option that shouldn't have had a parameter
+turned up with one. All fields of the result will be filled out (in
+particular, \c{param} will be set up correctly, so you can use this to
+implement optional parameters if you really need them; see
+\k{howto-optional-params} for an explicit example).
+
+This is a non-fatal error.
+
+\S4{coopt-result-multimixed} \c{COOPT_RESULT_MULTIMIXED}
+
+This is returned when more than one short option in a single command element
+had a parameter when \c{allow_mix_short_params} is turned on.
+
+In normal operation (when it is turned off), the first short option in a
+single command element that takes a parameter will get the rest of the
+command element as its parameter. However when it is turned on, that short
+option will get the subsequent command element as a parameter; the rest of
+the current command element is still processed as a list of short options.
+Two short options with parameters in the same command element will cause the
+return result.
+
+This is a non-fatal error.
+
+\S4{coopt-result-ambiguousopt} \c{COOPT_RESULT_AMBIGUOUSOPT}
+
+This is returned if an abbreviated long option was amibiguous. The first
+long option which could apply will have been fully processed, including a
+parameter if any.
+
+By default, abbreviated long options are turned off, and so this case will
+never occur. See \k{coopt-state-allow-long-opts-breved} for more
+information.
+
+This is a non-fatal error.
+
+\S4{coopt-result-badoption} \c{COOPT_RESULT_BADOPTION}
+
+This is returned if an option was found which wasn't in the options list.
+\c{param} will point to the part of the command element that we couldn't
+parse. You should remember that \c{param} may point to a string containing
+an inline parameter, and to check \c{marker[0]} to see whether this was a
+long option or a short option. It is suggested that you use
+\c{coopt_serror()} to generate a textual error, or \c{coopt_sopt()} to
+extract just the option name.
+
+This is a non-fatal error.
+
+\S4{coopt-result-noparam} \c{COOPT_RESULT_NOPARAM}
+
+This is returned only when a long option takes a parameter, and the
+parameter must be inline but none was found. This won't happen in normal
+operation, because the default is to allow separated parameters as well as
+inline.
+
+This is a non-fatal error.
+
+\S4{coopt-result-okay} \c{COOPT_RESULT_OKAY}
+
+This is returned when either an option was parsed, or an argument was found.
+In the first case, \c{opt} and \c{param} will be set up accordingly; in the
+second case, \c{opt} will be \c{NULL}, and \c{param} will point to the
+argument text.
+
+\S4{coopt-result-missingparam} \c{COOPT_RESULT_MISSINGPARAM}
+
+This is returned when \coopt reached the end of the command element array
+while looking for a parameter. \c{param} will therefore be \c{NULL}.
+
+This is a termination case, and in most cases will also be considered an
+error. \c{coopt_is_error()} will return true for
+\c{COOPT_RESULT_MISSINGPARAM}.
+
+\S4{coopt-result-end} \c{COOPT_RESULT_END}
+
+This is returned when \coopt reached the end of the comman element array in
+normal processing.
+
+This is a termination case, but should not be considered an error.
+
+\S2{coopt-sopt} \c{coopt_sopt()}
+
+\c{coopt_sopt()} will fill a buffer with the fully-qualified option string
+only; ie: any parameters are ignored. It will take account of the possible
+error types in the return structure to reassemble something in cases where
+the option has not been successfully parsed.
+
+\c size_t coopt_sopt(char * /*buffer*/, size_t /*bufsize*/,
+\c                   struct coopt_return * /*ret*/, int /*show_marker*/,
+\c                   struct coopt_state * /*state*/);
+
+\c{buffer} should be a buffer of size \c{bufsize}. \c{ret} and \c{state}
+give \c{coopt_sopt()} its context to work with. If \c{show_marker} is
+non-zero, the marker that was used will be prefixed to the option text;
+otherwise it will be omitted.
+
+\c{coopt_sopt()} returns the number of characters successfully written into
+the buffer. This may not be the extent of the buffer, even if there wasn't
+space to print the entire option string into the buffer. The buffer is
+always \c{NUL}-terminated on exit.
+
+\S2{coopt-serror} \c{coopt_serror()}
+
+\c{coopt_serror()} will fill a buffer with a string describing the current
+state, as given by the \c{ret} parameter. Typically this is only used on
+errors, but arguments and normal options will be described as well (although
+slightly tersely).
+
+\c size_t coopt_serror(char * /*buffer*/, size_t /*bufsize*/,
+\c                     struct coopt_return * /*ret*/,
+\c                     struct coopt_state * /*state*/);
+
+\c{buffer} should be a buffer of size \c{bufsize}. \c{ret} and \c{state}
+give \c{coopt_sopt()} its context to work with.
+
+\c{coopt_serror()} returns the number of characters successfully written
+into the buffer. This may not be the extent of the buffer, even if there
+wasn't space to print the entire description into the buffer. The buffer is
+always \c{NUL}-terminated on exit.
+
+Note that \c{coopt_serror()} only speaks English.
+
+\S2{coopt-state} \c{struct coopt_state}
+
+The \c{coopt_state} structure both contains the current state of \coopt in
+this case, and the options used for parsing. You can manipulate these
+options to vary the details of options parsing as you progress through the
+string - for instance, after a certain option has been encountered, other
+options may become valid or invalid.
+
+\c struct coopt_state
+\c {
+\c   /* You can change these having initialised the structure with coopt_init() */
+\c   struct coopt_option const * options;
+\c   unsigned int num_options;
+\c   struct coopt_flags
+\c   {
+\c     unsigned int allow_mix_short_params      : 1; /* eg: -cfv <filename>
+\c                                                    * <filename> binds to f
+\c                                                    */
+\c     unsigned int allow_long_eq_params        : 1; /* ie: "--value=this" style */
+\c     unsigned int allow_long_sep_params       : 1; /* ie: "--value this" style */
+\c     unsigned int allow_long_opts_breved      : 1; /* eg: --long[-opt]; non-unique
+\c                                                    * abbreviations will cause an
+\c                                                    * error
+\c                                                    */
+\c   } flags;
+\c 
+\c   /* Only change these if you're really sure about the consequences ... */
+\c   char const * separator; /* to disable, set to NULL */
+\c   char const * long_eq; /* the '=' in "--value=this".
+\c                          * Don't make this empty unless you *really* mean it.
+\c                          * If you make this NULL it will disable long_eq_params,
+\c                          * but please use the flag above instead ...
+\c                          */
+\c   char const * const * markers; /* this will look like
+\c                                  *   { "L--", "S-", NULL }
+\c                                  * or similar; it must be ordered: no marker
+\c                                  * may be a prefix of a marker later in the
+\c                                  * list (or the later one will be ignored)
+\c                                  * (So switching the first two members of the
+\c                                  * above list would cause "S-" to be used
+\c                                  * even when the option started "--".)
+\c                                  */
+\c 
+\c   /* Ignore this if you're a user */
+\c   int argc;
+\c   char const * const * argv;
+\c   int char_within_arg; /* in the current implementation, <0 =>
+\c                         * found the separator, and we're in the
+\c                         * argument-only list. However this should
+\c                         * not be relied on - see the manual for a
+\c                         * better way of handling this requirement.
+\c                         */
+\c   unsigned int skip_next_arg; /* non-zero to skip the next one on start of
+\c                                * processing */
+\c   char const * last_marker; /* used with multiple short options in one
+\c                              * argument
+\c                              */
+\c };
+
+\S3{coopt-state-options} \c{options} and \c{num_options}
+
+The \c{options} element is a pointer to your options array. You can either
+change this directly, or manipulate the array.
+
+\c{num_options} specifies the number of options actually considered within
+the array.
+
+As mentioned previously, you can disable an option definition within the
+array by setting its \c{short_option} to \c{0} and its \c{long_option} to
+\c{NULL}. Such disabled options are still counted in \c{num_options}.
+
+\S3{coopt-state-flags} \c{flags}
+
+\c{flags} is a bitfield which allows you to turn on and off various optional
+features.
+
+\S4{coopt-state-allow-mix-short-params} \c{allow_mix_short_params}
+
+\# FIXME: clearer
+If this is set, short options with parameters are allowed to intermingle
+with short options without parameters within a single command element. For
+instance \c{-vfh <file>} would be equivalent to \c{-v -f <file> -h}. If this
+is clear, \c{-vfh <file>} would be equivalent to \c{-v -f h -- <file>}.
+
+The default is clear.
+
+\S4{coopt-state-allow-long-eq-params}
+
+If this is set, long options with parameters of the form \c{--input=<file>}
+are allowed. If clear, it would be treated as a single long option with text
+"input=<file>" and no parameter.
+
+The default is set.
+
+\S4{coopt-state-allow-long-sep-params}
+
+If this is set, long options with parameters of the form \c{--input <file>}
+are allowed. If clear, it would be treated as a long option with text
+"input" and no parameter, followed by an argument with text "<file>".
+
+The default is set.
+
+\S4{coopt-state-allow-long-opts-breved}
+
+If this is set, long options may be abbreviated.
+
+The default is clear.
+
+\S3{coopt-state-separator}
+
+This specifies the string to be used as the argument separator: the first
+command element which matches this string exactly is skipped, and all
+subsequent command elements are arguments.
+
+The default is "--". It is inadvisable to change this.
+
+\S3{coopt-state-long-eq}
+
+This specifies the string to be used to separate the option name from the
+parameter for inline parameters to long options.
+
+The default is "=".
+
+\S3{coopt-state-markers}
+
+This specifies the markers to be used in looking for options. It should be
+an array, terminated with a \c{NULL} element. Each non-\c{NULL} element is a
+string starting with the character \c{S} (short option) or \c{L} (long
+option), followed by the string of the marker.
+
+You may define as many markers as you wish; however the array should be
+ordered so that no marker string is a prefix of a marker string later in the
+array (or the later one will be ignored).
+
+A common use of this is to allow \c{+} to introduce a short option instead
+of \c{-}, to indicate setting and clearing flags. To do this, a marker array
+of \c{\{ "L--", "S-", "S+", NULL \}} could be used. Note that you will need
+to do your own checking that the marker being used is appropriate for the
+option being used, and generate an error otherwise.
+
+The default is \c{\{ "L--", "S-", NULL \}}.
+
+\C{Details} \coopt details
+
+Going through what everything does, piece by piece.
+
+\H{internals} \coopt internals
+
+This section describes the internal structures of \coopt, in case you need
+to use them. These are not fixed, but there is a constant which you can use
+to tell if they have changed.
+
+\S{badgers} \c{COOPT_GRATUITOUS_BADGERS}
+
+The \c{coopt.h} header file defines a constant,
+\c{COOPT_GRATUITOUS_BADGERS}, to act as a version indicator for the internal
+implementation of \coopt. This allows you to write clever things using
+knowledge of the internals, and simply not have it compile if these
+internals change in the future.
+
+Currently \coopt has five badgers. The badgers themselves are gratuitous.
+
+\C{Funky stuff} Examples of usage
+
+A load of examples of usage. Lift a lot of these from the test cases, of
+course.
+
+\H{howto} How do I ... ?
+
+HOWTOs, basically. Include anything that GNU getopt() can do, of course.
+Look into popt and see if we can't be really clever here, too ... we _may_
+be able to by using a private function in some way. Not sure yet.
+
+achieving POSIX.2 _functionality_ (from the user's point of view, not the
+programmer's).
+
+\C{More info} How to find out more
+
+\H{future} The future: ideas, bugs, and obtaining upgrades
+
+The official \coopt web site is
+\W{http://www.tartarus.org/projects/coopt/}{http://www.tartarus.org/projects/coopt/}.
+From here you can download the latest version of \coopt, from
+\W{ftp://ftp.tartarus.org/projects/coopt/}{ftp://ftp.tartarus.org/projects/coopt/}.
+
+Bug reports, feature request and so on should be sent to
+\W{mailto:coopt@bugs.tartarus.org}{coopt@bugs.tartarus.org}. Note that in
+general we consider the functionality of \coopt to be complete, and are
+certainly aligned against adding "syntactic sugar" - easier ways of
+achieving things that are already possible, albeit perhaps in a slightly
+convoluted fashion.
+
+Currently we are considering producing \coopt equivalents for PERL and Java.
+
+\H{credits} Credits
+
+\coopt was designed by James Aylett, Simon Tatham, Owen Dunn, Chris Emerson
+and Ben Harris. All coding by James Aylett. The name \coopt was thought up
+by Owen, and the diaresis was added by Ben :-)
+
+\A{Info} Further information
+
+\H{FAQ} Frequently Asked Questions
+
+Warning: this FAQ is designed for programmers. \coopt is designed for
+programmers. It gets technical rather quickly.
+
+\S{faq-whatiscoopt} What is \coopt?
+
+\coopt is a command line options parsing library; it helps programs to
+handle options in a consistent way. It has been designed to be consistent
+and easy to use, as well as very flexible. By default it implements options
+in the style of GNU \c{getopt()} (ie: "-" introduces a short option, and
+"--" introduces a long option).
+
+\S{faq-whynotgetopt} Why not use \c{getopt()}?
+
+\c{getopt()} is an options parsing system which is implemented on most
+Unices (it is specified by POSIX.2, and so will be present on more or less
+all modern Unices, and on many other modern operating systems).
+
+Unfortunately, POSIX.2 only defines support for short options (eg: -h, -v).
+Many modern programs will also want to supply the more friendly long options
+(eg: --help, --version) as well.
+
+POSIX.2 also specifies certain behaviour which some programmers disagree
+with; in particular, arguments to the program cannot be mixed within options
+to the program: as soon as an argument is encountered, all subsequent
+members of the \c{argv} argument list are treated as program arguments, and
+not as options.
+
+You should use POSIX \c{getopt()} only if you expressly only need its
+features. In general, even if you need something functionally identical, you
+are probably better off at least using GNU \c{getopt()} (see
+\k{faq-whynotGNUgetopt}).
+
+\S{faq-whynotGNUgetopt} Why not use GNU \c{getopt()}?
+
+The GNU project has created a drop-in replacement for POSIX.2 \c{getopt()}
+which augments the POSIX features by adding support for long options.
+Unfortunately, because they desired backwards compatibility with the POSIX
+\c{getopt()}, the method for supporting long options is rather ugly, and
+involves global state (which means that it may not be able to be used in a
+multi-threaded environment without jumping through hoops).
+
+\# FIXME: check that ANSI says what I think it says about argv here
+They also lifted the restriction on arguments being interspersed with
+options; however they did so in a rather brutal method which breaks the ANSI
+C specification (basically, they require the ability to permute the elements
+of \c{argv}).
+
+In addition, although GNU \c{getopt()} has been ported to many platforms, it
+was designed for Unix, and so provides an interface to the end-user (ie: the
+person using the program, not the programmer writing it) which is consistent
+with the Unix way of working. (So short options are introduced by "-", and
+long options by "--", and so on.) Some other platforms have different
+conventions, and some hacking is required to get GNU \c{getopt()} to behave
+appropriately.
+
+If you need a drop-in replacement for POSIX \c{getopt()}, you are probably
+best off using the GNU version. However if you are writing a program from
+scratch, or considering revamping a program in a way that will increase your
+options processing, it may not be the best choice for you.
+
+\S{faq-whynotmdwopt} Why not use \c{mdwopt()}?
+
+\# FIXME: check mdw's website, and check with him that he doesn't mind
+\# being referenced here.
+Mark Wooding has written \c{mdwopt()}, which is part of his mLib library of
+"various useful things". It is again designed so it can be used as a drop-in
+replacement for \c{getopt()}; however it provides additional functionality
+to avoid global state, allowing the caller to handle all memory requirements.
+
+
+
+Again, it is limited in its reconfigurability.
+
+\S{faq-whynotpopt} Why not use \c{popt}?
+
+\# FIXME: check origins
+\c{popt} is another GNU options parsing library, written (I believe) for the
+GNOME desktop project. It is designed substantially differently to the other
+options parsing libraries listed above
+
+\S{faq-howcani) How do I ... ?
+
+See the HOWTO section of the manual, in \k{howto}.
+
+\S{faq-obtaining} How do I get \coopt?
+
+The official \coopt web site is
+\W{http://www.tartarus.org/projects/coopt/}{http://www.tartarus.org/projects/coopt/}.
+From here you can download the latest version of \coopt, from
+\W{ftp://ftp.tartarus.org/projects/coopt/}{ftp://ftp.tartarus.org/projects/coopt/}.
+
+You can also obtain the latest version of \coopt via CVS; see
+\W{http://cvs.tartarus.org/}{http://cvs.tartarus.org/} for instructions on
+using Tartarus CVS by anonymous access, and for a web interface to the CVS
+tree.
+
+\S{faq-tartarus} Tartarus?
+
+Tartarus is a tight-knit group of hackery, documentary, and other
+layabout-ery type people, most of whom are based in Cambridge, UK. It is
+intended to embrace any computer-based projects we think are interesting.
+
+\H{alternatives} Alternatives to \coopt
+
+Point-by-point comparison of pros and cons of each solution.

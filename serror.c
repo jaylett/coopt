@@ -1,5 +1,5 @@
 /*
- * $Id: serror.c,v 1.1 1999/08/10 15:28:42 james Exp $
+ * $Id: serror.c,v 1.2 1999/09/07 13:49:36 james Exp $
  * serror.c
  * 
  * Implementation of coopt_serror(), utility routine for coopt.
@@ -85,7 +85,7 @@ size_t coopt_serror(char *buffer, size_t bufsize, struct coopt_return *ret,
     }
     break;
    case COOPT_RESULT_MISSINGPARAM:
-    writestr_str(str_MISSINGPARAM);
+    writestr(str_MISSINGPARAM);
     writeopt();
     break;
    case COOPT_RESULT_END:
