@@ -1,5 +1,5 @@
 /*
- * $Id: coopt.h,v 1.6 2000/02/13 21:06:35 james Exp $
+ * $Id: coopt.h,v 1.7 2000/02/20 15:49:41 james Exp $
  * coopt.h
  *
  * Interface header file for coopt, the Tartarus option parsing library
@@ -59,6 +59,8 @@
 
 #ifndef COOPT_H
 #define COOPT_H
+
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {

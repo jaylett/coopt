@@ -1,5 +1,5 @@
 AC_INIT(coopt.h)
-AM_INIT_AUTOMAKE(libcoopt, 1.0.1)
+AM_INIT_AUTOMAKE(libcoopt, 1.0.2)
 
 dnl Find the programs we need for building, and configure as necessary
 AC_PROG_CC
