@@ -8,7 +8,7 @@ AUTOMAKE_OPTIONS = foreign
 
 lib_LIBRARIES = libcoopt.a
 
-pkginclude_HEADERS = coopt.h
+include_HEADERS = coopt.h
 
 ## --- Things to put in the library ---
 
