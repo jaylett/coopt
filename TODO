@@ -1,0 +1,4 @@
+ * serror() and sopt() test code (this is tricky ...)
+ * finish documentation (inc. some man pages)
+ * PERL port (OSD investigating)
+ * Java port (probably a rewrite :-(

@@ -3,7 +3,7 @@
 \# Documentation source for coopt
 \# (c) Copyright James Aylett 1999-2000
 
-\versionid $Id: coopt.but,v 1.4 2000/01/20 23:28:49 james Exp $
+\versionid $Id: coopt.but,v 1.5 2000/02/09 10:40:52 james Exp $
 
 \define{coopt} co\u00F6{o}pt
 
@@ -115,7 +115,7 @@ and structure definitions needed, and the linker will need to know to link
 in the \c{libcoopt.a} library which contains the \coopt routines.
 
 By default, \coopt will be installed with the header file in
-\c{/usr/local/include/libcoopt}, and the library in \c{/usr/local/lib}. If
+\c{/usr/local/include}, and the library in \c{/usr/local/lib}. If
 you have overridden this, or your system administrator has installed \coopt
 in a different place, you will have to adapt the following to your
 situation. (A common alteration is to put the header file in
@@ -124,19 +124,14 @@ situation. (A common alteration is to put the header file in
 \S{compiler} Compiler
 
 Modern compiler setups will typically look in \c{/usr/local/include} for
-header files, so one way of including the header file is to use:
-
-\c #include <libcoopt/coopt.h>
-
-If this doesn't work, you may need to set your compiler to search
-\c{/usr/local/include} for header files. Alternatively, you could set your
-compiler to search \c{/usr/local/include/libcoopt} for header files,
-and simply use:
+header files, so the best way of including the header file is to use:
 
 \c #include <coopt.h>
 
-For GNU \c{gcc}, \c{-I /usr/local/include} or
-\c{-I /usr/local/include/libcoopt} respectively should do the trick.
+If this doesn't work, you may need to set your compiler to search
+\c{/usr/local/include} for header files.
+
+For GNU \c{gcc}, \c{-I /usr/local/include} should do the trick.
 
 \S{linker} Linker
 
@@ -175,7 +170,7 @@ there being a \c{NULL} member at the end of the \c{argv} array).
 \c };
 \c
 \c coopt_init(&state, options, sizeof(options) / sizeof(struct coopt_option),
-\c            argc-1, argv+1);
+\c            argc-1, (char const * const * )(argv+1));
 \c do
 \c {
 \c   ret = coopt(&state);
@@ -754,6 +749,8 @@ Mark Wooding has written \c{mdwopt()}, which is part of his mLib library of
 "various useful things". It is again designed so it can be used as a drop-in
 replacement for \c{getopt()}; however it provides additional functionality
 to avoid global state, allowing the caller to handle all memory requirements.
+
+\# FIXME: more stuff here ... ?
 
 Again, it is limited in its reconfigurability, and long options are
 configured in an ugly manner.
