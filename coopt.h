@@ -1,9 +1,29 @@
 /*
- * $Id: coopt.h,v 1.1 1999/05/18 17:55:28 james Exp $
+ * $Id: coopt.h,v 1.2 1999/06/03 13:18:40 james Exp $
  * coopt.h
  *
  * Interface header file for coopt, the Tartarus option parsing library
  * (c) Copyright James Aylett 1999
+ *
+ * Plus points over getopt:
+ *   all memory handled by the user
+ *   no global state, so can be threaded
+ *   separator ("--") can be altered
+ *   long options supported
+ *   both sep (--file <file>) and eq (--file=<file>) long opt params
+ *   sep (-f <file>) and inline (-f<file>) short opt params
+ *   mix short params (-fv <file>)
+ *   long and short option markers ("-", "--") can be altered
+ *   options can be easily added and removed between calling coopt
+ *   arguments may be interspersed with options
+ *   'private' field per option, making sophisticated option dispatch easier
+ *
+ * Plus points over GNU getopt:
+ *   obeys POSIX: argv is const
+ *   porting not required (hopefully) - some GNU getopt ports are incomplete
+ *   BSD license, so re-licensable
+ *
+ * See the manual for more information, and detailed examples.
  */
 
 #ifndef COOPT_H
@@ -25,9 +45,7 @@ extern "C" {
 struct coopt_option
 {
   char short_option; /* 0 if no short equivalent */
-  unsigned int has_param; /* COOPT_NO_PARAM or COOPT_REQUIRED_PARAM only.
-  			   * Optional parameters are horrible.
-  			   */
+  unsigned int has_param; /* COOPT_NO_PARAM or COOPT_REQUIRED_PARAM only. */
   char const * long_option; /* full text of long option */
   void * private; /* can leave out completely in initialiser;
   		   * this is private to the user - coopt won't touch it
@@ -38,36 +56,28 @@ struct coopt_option
 #define COOPT_REQUIRED_PARAM	(1)
 
 /*
- * No, we don't like these defines living completely outside the COOPT
- * namespace. If you really want this, you can uncomment this section,
- * but there's not really much point. Also, we call them params not
- * arguments for clarity.
-#define no_argument		(0)
-#define required_argument	(1)
- */
-
-/*
  * Note that unlike GNU getopt, we don't allow optional_argument.
  * This is because we believe it to be more confusing than it's worth.
- * (It would make the coopt() code itself more complex, since we'd have
- * to worry about what is an argument and what isn't, and we get into
- * trouble with --file -fish where "-fish" is the *optional* argument
- * to --file and there's also a short option "-f".)
  * We advocate having a separate option which gives the behaviour with
  * a default parameter.
+ * If you really need an optional parameter, use COOPT_NO_PARAM and catch
+ * COOPT_RESULT_HADPARAM. (Although this only works for long options with
+ * eq params.)
  */
 
 struct coopt_state; /* declare this to prevent any possible problems
 		     * it is defined later on in this header file
 		     */
-   
+
 /*
  * Call once to initialise the coopt_state structure, and to set
  * default options. The options can be changed directly by the user
  * later (see the structure definition, below).
  * 'options' may contain 'invalid' entries (see above); these are
  * skipped on processing, allowing you to quickly disable options
- * that aren't valid in context
+ * that aren't valid in context.
+ * Note that argc and argv as passed to coopt_init() should be
+ * argc-1 and argv+1 as passed to main().
  */
 void coopt_init(struct coopt_state * /*state*/,
 		struct coopt_option const * /*options*/,
@@ -82,11 +92,20 @@ void coopt_init(struct coopt_state * /*state*/,
  */
 struct coopt_return
 {
-  int result; /* negative for error, zero for found something, positive for
-  	       * termination cases
-  	       */
+  int result; /* see below */
+  int ambigresult; /* if result==COOPT_RESULT_AMBIGUOUSOPT, this will contain
+  		    * COOPT_RESULT_OKAY, or an error code relating to parameter
+  		    * processing. We don't advise allowing ambiguous options
+  		    * (abbreviated long options where more than one long option
+  		    * matches what was given), but this allows you to do
+  		    * complete processing on them if you really want.
+  		    */
   struct coopt_option const * opt; /* NULL on _END and on argument
   				    * (param -> argument)
+  				    * Also NULL for BADOPTION, in which case
+  				    * param -> what looked like the option
+  				    * (may include an eq-separated param; use
+  				    * coopt_sopt() to extract just the 'option')
   				    */
   char const * param; /* pointer to the parameter for this option (or NULL) */
   char const * marker; /* pointer to the marker definition (eg: "L--") that
@@ -99,15 +118,32 @@ struct coopt_return
  * defined part of the interface. The fatal/non-fatal error boundary isn't
  * defined.
  * There are some macros to make sure you aren't dependent on these
- * boundaries at all.
+ * boundaries at all. Probably the best way to call coopt is to use something
+ * like:
+ *
+ * struct coopt_return ret;
+ * do
+ * {
+ *   ret = coopt(&state);
+ *   if (!coopt_is_error(ret.result))
+ *   {
+ *     // process ret.opt
+ *   }
+ * } while (coopt_is_okay(ret.result));
+ *
+ * And then tidy up afterwards, switching on the individual errors and
+ * termination cases.
  */
 #define coopt_is_error(x) (x<0)
 #define coopt_is_okay(x) (x==0)
 #define coopt_is_termination(x) (x>0)
 #define coopt_is_fatal(x) ((x&1)==1)
 #define coopt_is_nonfatal(x) ((x&1)==0)
-  
-/* These are fatal errors */
+
+/*
+ * These are fatal errors
+ */
+
 /* Unspecified error - typically coopt() has been called wrongly
  * In some cases, it may be because coopt() went wrong - in which case you
  * may get most of the options processing having been completed successfully.
@@ -116,57 +152,84 @@ struct coopt_return
  */
 #define COOPT_RESULT_ERROR		(-1)
 
-/* These are non-fatal errors */
+/*
+ * These are non-fatal errors
+ */
+
 /* A long option that shouldn't have had a parameter turned up with one
  * This will set up all fields of the result properly; if the option had
  * been specified with a parameter, you'd get the same situation but with
  * COOPT_RESULT_OKAY.
  */
 #define COOPT_RESULT_HADPARAM		(-10)
-/* More than one option in mixed short params had a parameter */
+
+/* More than one option in mixed short params had a parameter
+ * This will be called on all options with parameters after the first one.
+ * eg: -fzt where all three options take parameters; 'f' will get _OKAY, but
+ * 'z' and 't' will get _MULTIMIXED.
+ * 'param' will be NULL in this case.
+ */
 #define COOPT_RESULT_MULTIMIXED		(-8)
-/* An abbreviated long option was ambiguous. opt will contain the first
- * one found that matched, with this option fully processed - ie param will
+
+/* An abbreviated long option was ambiguous. 'opt' will contain the first
+ * one found that matched, with this option fully processed - ie 'param' will
  * be right as well. This allows a client to allow ambiguous abbreviations
  * with the preference defined by the order of long options in the option
  * array.
+ * 'ambigresult' will contain either _OKAY, _HADPARAM or _NOPARAM depending
+ * on any errors in parameter processing for the first matching option.
  */
 #define COOPT_RESULT_AMBIGUOUSOPT	(-6)
-/* Found an option which wasn't in the list. param -> option string that
+
+/* Found an option which wasn't in the list. 'param' -> option string that
  * we couldn't parse. Remember to check marker[0] to see whether we're
  * talking about a long or short option.
+ * (Note that because coopt won't touch the argv list you gave it, the
+ * option string that 'param' points to may contain an eq-separated
+ * parameter - you should use coopt_sopt() to extract just the option name
+ * if you need it.)
  */
 #define COOPT_RESULT_BADOPTION		(-4)
-/* --long with =-style parameter only. This is non-fatal, so you can
- * use this to get optional arguments if you really need them.
+
+/* --long with =-style parameter only. The option will be fully processed
+ * other than this. You shouldn't use this to get optional parameters in
+ * general, because with sep-parameters turned on this will never happen
+ * (lack of an eq-parameter implies a separated parameter, so
+ *   --with-my-library --verbose
+ *  would give --with-my-library, with "--verbose" as its parameter)
  */
 #define COOPT_RESULT_NOPARAM		(-2)
+
 /*
- * For arguments, use _OKAY, set opt to NULL and
- * use param to point to the argument
+ * Either an option was passed with no troubles, or an argument was found
+ * (in which case 'opt' will be NULL, and 'param' will point to the
+ * argument.
  */
 #define COOPT_RESULT_OKAY		(0)
+
 /*
- * For _MISSINGPARAM, still return opt in coopt_return so user
- * can treat as default or whatever - can only happen when we
- * run out of argv while looking for a parameter. param will be
- * NULL in this case.
+ * Ran out of entries in argv while looking for a parameter. 'param' will
+ * therefore be NULL.
  */
 #define COOPT_RESULT_MISSINGPARAM	(1)
+
 /*
- * Ran out of argv
+ * Ran out of argv in normal processing (this isn't an error - it just
+ * signals that coopt has processed all options and arguments).
  */
 #define COOPT_RESULT_END		(2)
 
 /*
- * main coopt processing routine
+ * main coopt processing routine. Just call this repeatedly to cycle
+ * through all options and arguments.
  */
 struct coopt_return coopt(struct coopt_state * /*state*/);
 
 #define COOPT_GRATUITOUS_BADGERS 5
 
 /*
- * Complete coopt state. This is supplied by the user.
+ * Complete coopt state. This is supplied by the user, but should be set
+ * up by calling coopt_init().
  * This contains both the current state of processing - where in
  * the arguments coopt has got - and options associated with
  * processing. The latter may be changed by the user, the former
@@ -174,7 +237,7 @@ struct coopt_return coopt(struct coopt_state * /*state*/);
  */
 struct coopt_state
 {
-  /* You can change this having initialised the structure with coopt_init() */
+  /* You can change these having initialised the structure with coopt_init() */
   struct coopt_option const * options;
   unsigned int num_options;
   struct coopt_flags
@@ -192,12 +255,19 @@ struct coopt_state
 
   /* Only change these if you're really sure about the consequences ... */
   char const * separator; /* to disable, set to NULL */
-  char const * long_eq; /* the '=' in "--value=this". Don't make this empty! */
+  char const * long_eq; /* the '=' in "--value=this".
+                         * Don't make this empty unless you *really* mean it.
+                         * If you make this NULL it will disable long_eq_params,
+                         * but please use the flag above instead ...
+                         */
   char const * const * markers; /* this will look like
   				 *   { "L--", "S-", NULL }
   				 * or similar; it must be ordered: no marker
 				 * may be a prefix of a marker later in the
 				 * list (or the later one will be ignored)
+				 * (So switching the first two members of the
+				 * above list would cause "S-" to be used
+				 * even when the option started "--".)
   				 */
 
   /* Ignore this if you're a user */
@@ -226,12 +296,18 @@ struct coopt_state
  * text of the unparsable option.
  * If show_marker is non-zero, the marker that was used will be prefixed
  * to the option text.
+ * Returns: number of characters successfully written into the buffer.
+ * This may not be the extent of the buffer, even if there wasn't space to
+ * print the entire option string into the buffer, because it only does, eg,
+ * a sprintf() if it can fit the entire string in.
+ * Buffer is always NUL-terminated on exit.
  */
-void coopt_sopt(char * /*buffer*/, struct coopt_return * /*ret*/,
-		int /*show_marker*/, struct coopt_state */*state*/);
-  
+size_t coopt_sopt(char * /*buffer*/, size_t /*bufsize*/,
+                  struct coopt_return * /*ret*/, int /*show_marker*/,
+                  struct coopt_state */*state*/);
+
 #ifdef __cplusplus
 }
 #endif
-   
+
 #endif /* COOPT_H */

@@ -1,13 +1,13 @@
 /*
- * $Id: coopt.c,v 1.1 1999/05/18 17:55:28 james Exp $
+ * $Id: coopt.c,v 1.2 1999/06/03 13:18:40 james Exp $
  * coopt.c
  *
  * Implementation file for coopt, the Tartarus option parsing library
  * (c) Copyright James Aylett 1999
- * 
+ *
  * Additional design and assistance: Simon Tatham, Ben Harris, Owen Dunn,
  * Chris Emerson
- * 
+ *
  * Problems: mixed short parameters and missing parameter won't work with
  * defaults (so don't allow it!). Need to note this in the manual. FIXME:
  * I'm no longer positive what this means ... ?
@@ -19,12 +19,13 @@
 #include "coopt.h"
 
 /* Some utility routines we'll use later */
-struct coopt_return coopt_shortopt(struct coopt_state *);
-char *coopt_strstarts(char const *, char const *);
-char *coopt_strnstarts(char const *, char const *, size_t);
+static struct coopt_return coopt_shortopt(struct coopt_state *);
+static char *coopt_strstarts(char const *, char const *);
+static char *coopt_strnstarts(char const *, char const *, size_t);
 
-/* In a different compilation unit (strstr.c) */
-extern char *coopt_strstr(char const *, char const *);
+#ifndef HAVE_STRSTR
+char *strstr(char const *, char const *);
+#endif
 
 /*
  * Initialise the coopt_state structure to (a) the user setup, and
@@ -38,13 +39,13 @@ void coopt_init(struct coopt_state *state,
   char const **markers;
   state->options = options;
   state->num_options = num_options;
-   
+
   state->argc = argc;
   state->argv = argv;
   state->char_within_arg = 0;
   state->skip_next_arg = 0;
   state->last_marker = NULL;
-   
+
   state->flags.allow_mix_short_params = 0;
   state->flags.allow_long_eq_params = 1;
   state->flags.allow_long_sep_params = 1;
@@ -70,27 +71,28 @@ struct coopt_return coopt(struct coopt_state * state)
 {
   struct coopt_return result;
   result.result=COOPT_RESULT_OKAY; /* Look mummy! Optimistic code! */
+  result.ambigresult=COOPT_RESULT_OKAY; /* Look mummy! Optimistic code! */
   result.opt=NULL;
   result.param=NULL;
   result.marker=NULL;
-  
-  if (state==NULL)
+
+  if (state==NULL || state->argv==NULL)
   {
     result.result=COOPT_RESULT_ERROR;
     return result;
   }
-  
+
 /*  printf("[coopt:entered with argc=%i, argv[0]=%p, char_within_arg=%i]\n",
-	 state->argc, state->argv[0], state->char_within_arg);
-  printf("[coopt:state->markers[0]=%p='%s']\n", state->markers[0],
+	 state->argc, state->argv[0], state->char_within_arg);*/
+/*  printf("[coopt:state->markers[0]=%p='%s']\n", state->markers[0],
 	 state->markers[0]);*/
-  
+
   if (state->argc<=0)
   {
     result.result = COOPT_RESULT_END;
     return result;
   }
-  
+
   if (state->char_within_arg < 0)
   {
 /*    printf("[coopt:automatic argument]\n");*/
@@ -98,12 +100,12 @@ struct coopt_return coopt(struct coopt_state * state)
     result.param=state->argv++[0];
     return result;
   }
-   
+
   if (state->char_within_arg == 0)
   {
     int marker;
     char const *m=NULL;
-    
+
 /*    printf("[coopt:first char]\n");*/
     /* first, are we supposed to skip this arg? */
     if (state->skip_next_arg)
@@ -118,7 +120,7 @@ struct coopt_return coopt(struct coopt_state * state)
      * the separator, and then (b) find out which marker we're using
      * then we can worry about what option it is
      */
-    if (strcmp(state->argv[0], state->separator) == 0)
+    if (state->separator!=NULL && strcmp(state->argv[0], state->separator) == 0)
     {
 /*      printf("[coopt:skipping separator]\n");*/
       state->argc--; /* skip over this separator, which */
@@ -138,7 +140,7 @@ struct coopt_return coopt(struct coopt_state * state)
       if (m==NULL)
 	marker++;
     }
-    
+
     /* if we didn't find a marker, or we found a marker with no option
      * after it, we consider it to be an argument not an option.
      */
@@ -157,14 +159,14 @@ struct coopt_return coopt(struct coopt_state * state)
       int i;
       struct coopt_option const *opt;
       int ambiguous;
-      
+
      case 'S':
       state->last_marker = state->markers[marker];
       /* so subsequent short options have this set up correctly */
       state->char_within_arg = (m-state->argv[0]); /* skip marker */
       return coopt_shortopt(state);
       break;
-      
+
      case 'L':
       /*
        * if we get a long option, we need to worry about allow_long_eq_params
@@ -174,10 +176,10 @@ struct coopt_return coopt(struct coopt_state * state)
        */
       opt=NULL;
       ambiguous=0;
-      
-      if (state->flags.allow_long_eq_params)
+
+      if (state->flags.allow_long_eq_params && state->long_eq!=NULL)
       {
-	char const *r = coopt_strstr(m, state->long_eq);
+	char const *r = strstr(m, state->long_eq);
 	if (r!=NULL)
 	{
 /*	  printf("[coopt:found eq]\n");*/
@@ -194,7 +196,7 @@ struct coopt_return coopt(struct coopt_state * state)
 /*	printf("[coopt:eqs off]\n");*/
 	length_to_test = strlen(m);
       }
-      
+
       /* opt==NULL - so stop after we've found one
        * || state->allow_long_opts_breved - so don't actually stop if
        * we're allowing abbreviated options, because we want to fault
@@ -264,7 +266,8 @@ struct coopt_return coopt(struct coopt_state * state)
 	/* parse the parameter whether or not the option wants it */
 	if (m[length_to_test]!=0) /* so long_eq follows the long option */
 	{
-	  if (state->flags.allow_long_eq_params)
+/*	  printf("[coopt: inline param]\n");*/
+	  if (state->flags.allow_long_eq_params && state->long_eq!=NULL)
 	  {
 	    result.param = m+length_to_test;
 	    /* Now skip the long_eq
@@ -279,54 +282,68 @@ struct coopt_return coopt(struct coopt_state * state)
 	  {
 	    /* Something went wrong!
 	     * This really shouldn't happen, because
-	     * length_to_test=strlen(m) by definition is
+	     * length_to_test=strlen(m) by definition if
 	     * state->allow_long_eq_params is turned off!
 	     */
 	    result.result = COOPT_RESULT_ERROR;
+	    return result;
 	  }
 	}
 
-	if (result.result==COOPT_RESULT_OKAY)
+/*	printf("[coopt:parsing params]\n");*/
+        /* Found it - let's process any parameter
+         * note that we only do this if everything's fine, because otherwise
+         * we might accidentally overwrite the *real* error code ...
+         */
+	if (opt->has_param == COOPT_REQUIRED_PARAM)
 	{
-/*	  printf("[coopt:parsing params]\n");*/
-	  /* Found it - let's process any parameter
-	   * note that we only do this if everything's fine, because otherwise
-	   * we might accidentally overwrite the *real* error code ...
-	   */
-	  if (opt->has_param == COOPT_REQUIRED_PARAM)
+/*	  printf("[coopt: param requested]\n");*/
+	  if (m[length_to_test]==0) /* param follows in subsequent argument */
 	  {
-	    if (m[length_to_test]==0) /* param follows in subsequent argument */
+/*	    printf("[coopt: param follows]\n");*/
+	    if (state->flags.allow_long_sep_params)
 	    {
-	      if (state->flags.allow_long_sep_params)
+	      if (state->argc<=0) /* none to have ... */
 	      {
-		if (state->argc<=0) /* none to have ... */
-		  result.result = COOPT_RESULT_MISSINGPARAM;
-		else
-		{
-		  result.param = state->argv[0];
-		  state->argc--;
-		  state->argv++;
-		}
+/*	        printf("[coopt: none to have]\n");*/
+	        if (result.result==COOPT_RESULT_OKAY)
+	          result.result = COOPT_RESULT_MISSINGPARAM;
+	        else
+	          result.ambigresult = COOPT_RESULT_MISSINGPARAM;
 	      }
 	      else
 	      {
-		/* long_eq wasn't present, and the next argument isn't allowed
-		 * to be a parameter. So long_eq and the parameter were missing.
-		 */
-		result.result = COOPT_RESULT_NOPARAM;
+/*	        printf("[coopt: got it]\n");*/
+	        result.param = state->argv[0];
+	        state->argc--;
+	        state->argv++;
 	      }
 	    }
-	  }
-	  else
-	  {
-/*	    printf("[coopt:no param requested]\n");*/
-	    if (m[length_to_test]!=0) /* so long_eq follows the long option */
+	    else
 	    {
-/*	      printf("[coopt:but there was one!]\n");*/
-	      result.result = COOPT_RESULT_HADPARAM;
+/*	      printf("[coopt: following params forbidden]\n");*/
+              /* long_eq wasn't present, and the next argument isn't allowed
+	       * to be a parameter. So long_eq and the parameter were missing.
+	       */
+	      if (result.result==COOPT_RESULT_OKAY)
+	        result.result = COOPT_RESULT_NOPARAM;
+	      else
+	        result.ambigresult = COOPT_RESULT_NOPARAM;
 	    }
-	    /* No param */
 	  }
+	}
+	else
+	{
+/*	  printf("[coopt:no param requested]\n");*/
+	  if (m[length_to_test]!=0) /* so long_eq follows the long option */
+	  {
+/*            printf("[coopt:but there was one!]\n");*/
+	    if (result.result==COOPT_RESULT_OKAY)
+	      result.result = COOPT_RESULT_HADPARAM;
+	    else
+	      result.ambigresult = COOPT_RESULT_HADPARAM;
+	  }
+	  /* No param */
 	}
 	return result;
       }
@@ -356,11 +373,12 @@ struct coopt_return coopt(struct coopt_state * state)
  * to -f. The former can set skip_next_arg. If this is already set,
  * use COOPT_RESULT_MULTIMIXED.
  */
-struct coopt_return coopt_shortopt(struct coopt_state *state)
+static struct coopt_return coopt_shortopt(struct coopt_state *state)
 {
   int opt;
   struct coopt_return result;
   result.result=COOPT_RESULT_OKAY;
+  result.ambigresult=COOPT_RESULT_OKAY;
   result.opt=NULL;
   result.param=NULL;
   result.marker=state->last_marker; /* always gets used */
@@ -374,7 +392,7 @@ struct coopt_return coopt_shortopt(struct coopt_state *state)
     state->last_marker=NULL;
     return coopt(state);
   }
-  
+
   for (opt=0; opt<state->num_options; opt++)
   {
     /* if short_option==0, it isn't a valid short option ... */
@@ -429,7 +447,7 @@ struct coopt_return coopt_shortopt(struct coopt_state *state)
       }
     }
   }
-  
+
   /* Didn't find one. Oh dear ... */
   result.result = COOPT_RESULT_BADOPTION;
   result.param = state->argv[0] + state->char_within_arg;
@@ -442,7 +460,7 @@ struct coopt_return coopt_shortopt(struct coopt_state *state)
  * found at the start of (target). If (target) is shorter than (start),
  * this will return NULL.
  */
-char *coopt_strstarts(char const *target, char const *start)
+static char *coopt_strstarts(char const *target, char const *start)
 {
   char a,b;
   do
@@ -456,7 +474,7 @@ char *coopt_strstarts(char const *target, char const *start)
       return (char *)(NULL);
     }
   } while (a!=0 && b!=0);
-  
+
   if (b!=0)
   {
 /*    printf("[[coopt:start didn't terminate]]\n");*/
@@ -470,12 +488,15 @@ char *coopt_strstarts(char const *target, char const *start)
  * returns NULL, or pointer to the character after the end of (start),
  * found at the start of (target). If (target) is shorter than (start),
  * this will return NULL.
- * 
+ *
  * With the modification that we don't test more than max characters.
  */
-char *coopt_strnstarts(char const *target, char const *start, size_t max)
+static char *coopt_strnstarts(char const *target, char const *start,
+			      size_t max)
 {
   char a,b;
+  if (max==0) /* easiest to special case like this */
+    return (char *)target;
 /*  printf("[[coopt:target='%s' start='%s' max=%i]]\n", target, start, max);
   fflush(stdout);*/
   do
@@ -488,7 +509,7 @@ char *coopt_strnstarts(char const *target, char const *start, size_t max)
       return (char *)(NULL);
     max--;
   } while (a!=0 && b!=0 && max>0);
-  
+
   if (b!=0 && max>0) /* didn't terminate in either way */
     return (char *)(NULL);
   else

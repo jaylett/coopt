@@ -1,5 +1,5 @@
 /*
- * $Id: strstr.c,v 1.1 1999/05/18 17:55:28 james Exp $
+ * $Id: strstr.c,v 1.2 1999/06/03 13:18:41 james Exp $
  * strstr.c
  * 
  * Our implementation of strstr(), because we can't guarantee that's
@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char *coopt_strstr(char const *haystack, char const *needle)
+#ifndef HAVE_strstr
+
+char *strstr(char const *haystack, char const *needle)
 {
   while (haystack[0]!=0)
   {
@@ -25,3 +27,5 @@ char *coopt_strstr(char const *haystack, char const *needle)
   }
   return (char *)(NULL);
 }
+
+#endif
