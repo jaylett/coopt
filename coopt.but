@@ -1,21 +1,21 @@
 \# coopt.but
 \#
 \# Documentation source for coopt
-\# (c) Copyright James Aylett 2000
+\# (c) Copyright James Aylett 1999-2000
 
-\versionid $Id: coopt.but,v 1.2 2000/01/02 23:05:00 james Exp $
+\versionid $Id: coopt.but,v 1.3 2000/01/03 01:06:38 james Exp $
 
 \define{coopt} co\u00F6{o}pt
 
-\title coopt: option parsing library
+\title \coopt: an option parsing library
 
-\copyright Copyright 2000 James Aylett. All Rights Reserved.
+\copyright \u00A9{(c)} Copyright 1999-2000 James Aylett. All Rights Reserved.
 
 \C{Introduction} Introduction
 
 \H{whatiscoopt} What is \coopt?
 
-\coopt is a command line option parsing library; it fulfills the same basic
+\#{}\coopt is a command line option parsing library; it fulfills the same basic
 role as \i\c{getopt()} in POSIX.2 compliant Unices, while providing
 considerable added functionality. There are other libraries available which
 attempt to do the same, the best known being GNU's \c{getopt()} replacement,
@@ -25,18 +25,48 @@ see \k{alternatives}.
 
 \H{terms} Terms and concepts
 
-\# FIXME
-"command element array"
-arguments and options
-short and long options
-parameters
-POSIX separator
+While talking about \coopt, we will consider a command line to consist of a
+list of \e{elements}, each of which is either part of an \e{option}, or is
+an \e{argument}. Typically, arguments are files to be operated on, commands
+to be performed, and options alter how they are processed. (If it makes
+things clearer, you might like to think of arguments as nouns and verbs, and
+options as adjectives and adverbs - however this is only a rough analogy.)
+
+\#{}\coopt options are distinguished from arguments by starting with
+\e{markers}, such as \c{-} and \c{--}; markers are said to \e{introduce} one
+or more options. Since you may want to have an argument which starts with a
+marker, \coopt supports a third type of command line element, known as the
+\e{separator}: all elements after the separator are arguments, irrespective
+of whether they start with a marker or not.
+
+\#{}\coopt supports two types of options, known as \e{short options} and \e{long
+options} respectively. Short options are identified by a single character,
+and so you can have more than one short option after the introducing marker;
+long options are identified using a longer string, and so you can only have
+one per introducing marker. Any given marker will introduce either short
+options or long options - not both.
+
+Both short and long options can take \e{parameters} (for instance an option
+to turn on debugging output to a file could take a parameter to specify that
+file). Parameters can be either separated, where they take up another
+command line element after the option itself, or inline, where they are part
+of the command line element they parameterise. In the case of short options,
+inline parameters continue immediately after the character that specifies
+the option (eg: \c{-fname} is the short option \c{f} with the parameter
+\c{name}). For long options, inline parameters are separated from the option
+by a configurable \e{eq-separator} (by default, the eq-separator is \c{=},
+so \c{--file=name} is the long option \c{file} with the parameter \c{name}).
+
+The defaults for \coopt are for the markers to be \c{-} for short options
+and \c{--} for long options, and for the separator to be \c{--} (as for
+POSIX.2 \c{getopt}). For information about other defaults, so
+\k{coopt-init}.
 
 \C{Installing} Installing \coopt
 
 \H{source} From source
 
-\coopt comes as a gzipped tar file containing a directory \c{coopt/} which
+\#{}\coopt comes as a gzipped tar file containing a directory \c{coopt/} which
 contains the \coopt source. You should unpack the archive, enter the
 directory it creates, and configure and build \coopt as normal. Something
 like:
@@ -49,7 +79,7 @@ The \c{&& make install} part at the end may be omitted if you don't want to
 install \coopt for general use, but merely want to build against it
 yourself.
 
-\coopt will install in \c{/usr} by default (which will probably require
+\#{}\coopt will install in \c{/usr} by default (which will probably require
 \c{root} access); however \coopt's \c{configure} script is a normal GNU one,
 and so you can alter the install prefix using the \c{--prefix} option. For
 instance:
@@ -85,9 +115,10 @@ and structure definitions needed, and the linker will need to know to link
 in the \c{libcoopt.a} library which contains the \coopt routines.
 
 By default, \coopt will be installed with the header file in
-\c{/usr/include/libcoopt/}, and the library in \c{/usr/lib/}. If you have
-overridden this, or your system administrator has installed \coopt in a
-different place, you will have to adapt the following to your situation.
+\c{/usr/local/include/libcoopt/}, and the library in \c{/usr/local/lib/}. If
+you have overridden this, or your system administrator has installed \coopt
+in a different place, you will have to adapt the following to your
+situation.
 
 \S{compiler} Compiler
 
@@ -105,22 +136,21 @@ For GNU \c{gcc}, \c{-I /usr/include/libcoopt/} should do the trick.
 
 \S{linker} Linker
 
-\# FIXME
 You need to tell your linker to link in \c{libcoopt.a}; typically this will
-be done by appending \c{-lcoopt} to the linker command line. However you may
-need to consider the order of libraries linked in, which is something I
-never really pay attention to, but ought to.
+be done by appending \c{-lcoopt} to the linker command line. (As usual for
+libraries, it needs to come after the objects which use any of its
+functions.)
 
 \H{calling} Calling \coopt
 
-\coopt is set up by a single function, \c{coopt_init()}, and called via a
+\#{}\coopt is set up by a single function, \c{coopt_init()}, and called via a
 single function, \c{coopt()}, which processes the next option or argument in
 the command array. In order to use it, you need to set up an array of
 \c{struct coopt_option} structures defining the options \coopt will
 recognise, and supply a \c{struct coopt_state} structure for \coopt to store
 its current state in.
 
-\coopt also contains a couple of support functions which make error
+\#{}\coopt also contains a couple of support functions which make error
 reporting easier.
 
 \S{code-fragment} Sample code fragment
@@ -129,7 +159,7 @@ The following code fragment will do this, supplying three basic options;
 \c{argc} and \c{argv} are assumed to be either the parameters passed to
 \c{main()}, or a pair of variables that are set up in a similar way. (\coopt
 uses \c{argc} to calculate the length of \c{argv}, rather than relying on
-their being a \c{NULL} member at the end of the \c{argv} array).
+there being a \c{NULL} member at the end of the \c{argv} array).
 
 \c struct coopt_return ret;
 \c struct coopt_state state;
@@ -518,11 +548,11 @@ features.
 
 \S4{coopt-state-allow-mix-short-params} \c{allow_mix_short_params}
 
-\# FIXME: clearer
 If this is set, short options with parameters are allowed to intermingle
 with short options without parameters within a single command element. For
 instance \c{-vfh <file>} would be equivalent to \c{-v -f <file> -h}. If this
-is clear, \c{-vfh <file>} would be equivalent to \c{-v -f h -- <file>}.
+option is not set, \c{-vfh <file>} would be equivalent to \c{-v -f h --
+<file>}.
 
 The default is clear.
 
@@ -558,8 +588,8 @@ The default is "--". It is inadvisable to change this.
 
 \S3{coopt-state-long-eq}
 
-This specifies the string to be used to separate the option name from the
-parameter for inline parameters to long options.
+This specifies the eq-separator: the string to be used to separate the
+option name from the parameter for inline parameters to long options.
 
 The default is "=".
 
@@ -604,10 +634,12 @@ Currently \coopt has five badgers. The badgers themselves are gratuitous.
 
 \C{Funky stuff} Examples of usage
 
-A load of examples of usage. Lift a lot of these from the test cases, of
-course.
+\# FIXME: A load of examples of usage. Lift a lot of these from the test cases, of
+\# course.
 
 \H{howto} How do I ... ?
+
+\# FIXME: write
 
 HOWTOs, basically. Include anything that GNU getopt() can do, of course.
 Look into popt and see if we can't be really clever here, too ... we _may_
@@ -636,7 +668,7 @@ Currently we are considering producing \coopt equivalents for PERL and Java.
 
 \H{credits} Credits
 
-\coopt was designed by James Aylett, Simon Tatham, Owen Dunn, Chris Emerson
+\#{}\coopt was designed by James Aylett, Simon Tatham, Owen Dunn, Chris Emerson
 and Ben Harris. All coding by James Aylett. The name \coopt was thought up
 by Owen, and the diaresis was added by Ben :-)
 
@@ -649,7 +681,7 @@ programmers. It gets technical rather quickly.
 
 \S{faq-whatiscoopt} What is \coopt?
 
-\coopt is a command line options parsing library; it helps programs to
+\#{}\coopt is a command line options parsing library; it helps programs to
 handle options in a consistent way. It has been designed to be consistent
 and easy to use, as well as very flexible. By default it implements options
 in the style of GNU \c{getopt()} (ie: "-" introduces a short option, and
@@ -661,9 +693,9 @@ in the style of GNU \c{getopt()} (ie: "-" introduces a short option, and
 Unices (it is specified by POSIX.2, and so will be present on more or less
 all modern Unices, and on many other modern operating systems).
 
-Unfortunately, POSIX.2 only defines support for short options (eg: -h, -v).
+Unfortunately, POSIX.2 only defines support for short options (eg: \c{-h}, \c{-v}).
 Many modern programs will also want to supply the more friendly long options
-(eg: --help, --version) as well.
+(eg: \c{--help}, \c{--version}) as well.
 
 POSIX.2 also specifies certain behaviour which some programmers disagree
 with; in particular, arguments to the program cannot be mixed within options
@@ -695,8 +727,8 @@ whole lot before you start processing).
 In addition, although GNU \c{getopt()} has been ported to many platforms, it
 was designed for Unix, and so provides an interface to the end-user (ie: the
 person using the program, not the programmer writing it) which is consistent
-with the Unix way of working. (So short options are introduced by "-", and
-long options by "--", and so on.) Some other platforms have different
+with the Unix way of working. (So short options are introduced by \c{-}, and
+long options by \c{--}, and so on.) Some other platforms have different
 conventions, and some hacking is required to get GNU \c{getopt()} to behave
 appropriately.
 
@@ -709,14 +741,14 @@ options processing, it may not be the best choice for you.
 
 \# FIXME: check mdw's website, and check with him that he doesn't mind
 \# being referenced here.
+
 Mark Wooding has written \c{mdwopt()}, which is part of his mLib library of
 "various useful things". It is again designed so it can be used as a drop-in
 replacement for \c{getopt()}; however it provides additional functionality
 to avoid global state, allowing the caller to handle all memory requirements.
 
-
-
-Again, it is limited in its reconfigurability.
+Again, it is limited in its reconfigurability, and long options are
+configured in an ugly manner.
 
 \S{faq-whynotpopt} Why not use \c{popt}?
 
@@ -731,7 +763,7 @@ conventions part way through a command line (for instance, GCC uses the \c{-x
 <language>} parameter to manually determine the programming language of
 subsequent source files).
 
-\S{faq-howcani) How do I ... ?
+\S{faq-howcani} How do I ... ?
 
 See the HOWTO section of the manual, in \k{howto}.
 
@@ -758,3 +790,6 @@ intended to embrace any computer-based projects we think are interesting.
 \H{alternatives} Alternatives to \coopt
 
 Point-by-point comparison of pros and cons of each solution.
+
+\# FIXME: write
+
