@@ -1,0 +1,124 @@
+.\" Copyright (c) James Aylett 2000.
+.\"
+.\" This man page is a complete mess, mainly reflecting the fact that I
+.\" know almost nothing about nroff or writing man pages properly. Sigh.
+.ds V 1.0.1
+.ds E " \-\- 
+.if t .ds E \(em
+'
+.\".TH COOPT 3 "13 Feb 2000" "Tartarus" "Linux Programmer's Manual"
+.\".TH COOPT 3 "13 Feb 2000" "Version \*V"
+.TH COOPT 3 "13 Feb 2000" "Tartarus"
+.SH NAME
+coopt \- Parse command line options
+.SH SYNOPSIS
+.nf
+.B #include <coopt.h>
+.sp
+.BI "void coopt_init(struct coopt_state * " state ","
+.BI "                struct coopt_option const * " options ","
+.BI "                unsigned int " num_options ","
+.BI "                int " argc ", char const * const * " argv ");"
+.sp
+.BI "struct coopt_return coopt(struct coopt_state * " state ");"
+.fi
+.SH DESCRIPTION
+The
+.B coopt_init()
+function prepares the given
+.I struct coopt_state
+structure
+.I state
+using the remaining arguments.
+.I options
+is an array of acceptable options, of
+.I num_options
+in number;
+.I argc
+and
+.I argv
+are the argument count and array as passed to the
+.B main()
+function on program invocation, except that the first element of the
+array should be skipped (so pass in
+.I argc - 1
+and
+.I argv + 1
+).
+.PP
+The
+.B coopt()
+function parses the next option, returning a
+.I struct coopt_return
+structure representing what it found.
+.PP
+For more information, including enough to actually start using
+.B coopt
+, see the accompanying documentation.
+.SH STRUCTURES
+.B <coopt.h>
+declares three structures used in options processing,
+.B struct coopt_state
+,
+.B struct coopt_option
+and
+.B struct coopt_return
+, as follows:
+.nf
+.sp
+.in 10
+struct coopt_state {
+.in 14
+struct coopt_option const * options;
+unsigned int num_options;
+struct coopt_flags {
+.in 18
+unsigned int allow_mix_short_params : 1;
+unsigned int allow_long_eq_params : 1;
+unsigned int allow_long_sep_params : 1;
+unsigned int allow_long_opts_breved : 1;
+.in 14
+} flags;
+char const * separator;
+char const * long_eq;
+char const * const * markers;
+/* followed by coopt-private data */
+.in 10
+};
+.sp
+struct coopt_option {
+.in 14
+char short_option;
+unsigned int has_param;
+char const * long_option;
+void * data;
+.in 10
+};
+.sp
+struct coopt_return {
+.in 14
+int result;
+int ambigresult;
+struct coopt_option const * opt;
+char const * param;
+char const * marker;
+.in 10
+};
+.fi
+.SH AUTHOR
+James Aylett, james@tartarus.org
+.br
+http://www.tartarus.org/~james/
+.PP
+http://www.tartarus.org/projects/coopt/
+.br
+The \fBcoopt\fP home page (for distributions and so forth).
+.PP
+Additional design and assistance: Simon Tatham, Ben Harris, Owen Dunn,
+Chris Emerson, Richard Boulton.
+.SH BUGS
+Documentation is sparse. This man page in particular is pathetic.
+.PP
+We haven't had a release yet.
+.PP
+The web and ftp sites don't exist.

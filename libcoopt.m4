@@ -1,4 +1,5 @@
 # a macro to get the libs/cflags for libcoopt
+# Copyright (c) Richard Boulton 2000. All Rights Reserved.
 # serial 1
 
 dnl AM_PATH_LIBCOOPT([ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])

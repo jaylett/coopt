@@ -1,2 +1,2 @@
 test Makefile configure Makefile.in config.status config.cache config.log .deps
-output.txt
+output.txt aclocal.m4

@@ -12,6 +12,9 @@ lib_LIBRARIES = libcoopt.a
 
 include_HEADERS = coopt.h
 
+man_MANS = coopt.3
+#man_MANS = coopt.3 coopt_serror.3 coopt_sopt.3
+
 m4datadir = $(datadir)/aclocal
 m4data_DATA = libcoopt.m4
 

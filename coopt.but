@@ -3,7 +3,7 @@
 \# Documentation source for coopt
 \# (c) Copyright James Aylett 1999-2000
 
-\versionid $Id: coopt.but,v 1.5 2000/02/09 10:40:52 james Exp $
+\versionid $Id: coopt.but,v 1.6 2000/02/13 21:06:35 james Exp $
 
 \define{coopt} co\u00F6{o}pt
 
@@ -61,6 +61,38 @@ The defaults for \coopt are for the markers to be \c{-} for short options
 and \c{--} for long options, and for the separator to be \c{--} (as for
 POSIX.2 \c{getopt}). For information about other defaults, see
 \k{coopt-init}.
+
+\H{licence} \coopt licensing
+
+\#{}\coopt is distributed under the following terms (essentially the BSD licence):
+
+\c   Redistribution and use in source and binary forms, with or without
+\c   modification, are permitted provided that the following conditions
+\c   are met:
+\c
+\c   1.  Redistributions of source code must retain the above copyright
+\c       notice, this list of conditions and the following disclaimer.
+\c
+\c   2.  Redistributions in binary form must reproduce the above
+\c       copyright notice, this list of conditions and the following
+\c       disclaimer in the documentation and/or other materials provided
+\c       with the distribution.
+\c
+\c   3.  Neither name of coopt nor the names of its contributors may be
+\c       used to endorse or promote products derived from this software
+\c       without specific prior written permission.
+\c
+\c   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+\c   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+\c   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+\c   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
+\c   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+\c   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+\c   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+\c   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+\c   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+\c   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+\c   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 \C{Installing} Installing \coopt
 
@@ -631,9 +663,9 @@ internals change in the future.
 
 Currently \coopt has five badgers. The badgers themselves are gratuitous.
 
-FIXME: \S level documentation of remaining internal structure stuff ...
+FIXME: \\S level documentation of remaining internal structure stuff ...
 
-FIXME: \H level documentation of \coopt's parsing strategy, I guess ...
+FIXME: \\H level documentation of \coopt's parsing strategy, I guess ...
 
 \C{Funky stuff} Examples of usage
 
@@ -663,7 +695,7 @@ From here you can download the latest version of \coopt, from
 Bug reports, feature request and so on should be sent to
 \W{mailto:coopt@bugs.tartarus.org}{coopt@bugs.tartarus.org}. Note that in
 general we consider the functionality of \coopt to be complete, and are
-certainly aligned against adding \q{syntactic sugar} - easier ways of
+certainly aligned against adding syntactic sugar - easier ways of
 achieving things that are already possible, albeit perhaps in a slightly
 convoluted fashion.
 
@@ -767,6 +799,9 @@ repeatedly in a loop. This makes it difficult to change processing
 conventions part way through a command line (for instance, GCC uses the \c{-x
 <language>} parameter to manually determine the programming language of
 subsequent source files).
+
+\# FIXME: popt can be called in a loop. Need to go through its documentation
+\# a bit more at some point ...
 
 \S{faq-howcani} How do I ... ?
 
