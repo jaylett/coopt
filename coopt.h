@@ -1,5 +1,5 @@
 /*
- * $Id: coopt.h,v 1.2 1999/06/03 13:18:40 james Exp $
+ * $Id: coopt.h,v 1.3 1999/08/10 15:28:42 james Exp $
  * coopt.h
  *
  * Interface header file for coopt, the Tartarus option parsing library
@@ -113,33 +113,6 @@ struct coopt_return
   			*/
 };
 
-/* Returns come in four sorts: fatal error, non-fatal error, okay, and
- * termination. Errors are < 0, okay ==0, termination > 0. This is a
- * defined part of the interface. The fatal/non-fatal error boundary isn't
- * defined.
- * There are some macros to make sure you aren't dependent on these
- * boundaries at all. Probably the best way to call coopt is to use something
- * like:
- *
- * struct coopt_return ret;
- * do
- * {
- *   ret = coopt(&state);
- *   if (!coopt_is_error(ret.result))
- *   {
- *     // process ret.opt
- *   }
- * } while (coopt_is_okay(ret.result));
- *
- * And then tidy up afterwards, switching on the individual errors and
- * termination cases.
- */
-#define coopt_is_error(x) (x<0)
-#define coopt_is_okay(x) (x==0)
-#define coopt_is_termination(x) (x>0)
-#define coopt_is_fatal(x) ((x&1)==1)
-#define coopt_is_nonfatal(x) ((x&1)==0)
-
 /*
  * These are fatal errors
  */
@@ -201,7 +174,7 @@ struct coopt_return
 #define COOPT_RESULT_NOPARAM		(-2)
 
 /*
- * Either an option was passed with no troubles, or an argument was found
+ * Either an option was parsed with no troubles, or an argument was found
  * (in which case 'opt' will be NULL, and 'param' will point to the
  * argument.
  */
@@ -219,12 +192,47 @@ struct coopt_return
  */
 #define COOPT_RESULT_END		(2)
 
+/* Returns come in four sorts: fatal error, non-fatal error, okay, and
+ * termination. Errors are < 0, okay ==0, termination > 0. This is a
+ * defined part of the interface. The fatal/non-fatal error boundary isn't
+ * defined.
+ * There are some macros to make sure you aren't dependent on these
+ * boundaries at all. Probably the best way to call coopt is to use something
+ * like:
+ *
+ * struct coopt_return ret;
+ * do
+ * {
+ *   ret = coopt(&state);
+ *   if (!coopt_is_error(ret.result))
+ *   {
+ *     // process ret.opt
+ *   }
+ * } while (coopt_is_okay(ret.result));
+ *
+ * And then tidy up afterwards, switching on the individual errors and
+ * termination cases.
+ */
+#define coopt_is_error(x) (x<0 || x==COOPT_RESULT_MISSINGPARAM)
+#define coopt_is_okay(x) (x==0)
+#define coopt_is_termination(x) (x>0)
+#define coopt_is_fatal(x) (x<0 && (x&1)==1)
+#define coopt_is_nonfatal(x) ((x<0 && (x&1)==0) || x==COOPT_RESULT_MISSINGPARAM)
+
 /*
  * main coopt processing routine. Just call this repeatedly to cycle
  * through all options and arguments.
  */
 struct coopt_return coopt(struct coopt_state * /*state*/);
 
+/*
+ * The number of badgers acts as a version indicator for the internal
+ * implementation of coopt. This allows people to write clever things
+ * using knowledge of the internals, and not have it compile and then
+ * break in inexplicable ways in future - it simply won't compile.
+ *
+ * The badgers themselves are gratuitous.
+ */
 #define COOPT_GRATUITOUS_BADGERS 5
 
 /*
@@ -304,7 +312,24 @@ struct coopt_state
  */
 size_t coopt_sopt(char * /*buffer*/, size_t /*bufsize*/,
                   struct coopt_return * /*ret*/, int /*show_marker*/,
-                  struct coopt_state */*state*/);
+                  struct coopt_state * /*state*/);
+
+/*
+ * Fill the buffer with a string describing the current state.
+ * Typically this is only used on error, but arguments and normal
+ * options will be described as well (although slightly tersely).
+ * Currently this hasn't even been considered in terms of localisation - but
+ * that's okay, because I'm not convinced that gettext is really a sensible
+ * long-term solution to locality issues anyway. We'll see.
+ * Returns: number of characters successfully written into the buffer.
+ * This may not be the extent of the buffer, even if there wasn't space to
+ * print the entire error string into the buffer, because it only does, eg,
+ * a sprintf() if it can fit the entire string in.
+ * Buffer is always NUL-terminated on exit.
+ */
+size_t coopt_serror(char * /*buffer*/, size_t /*bufsize*/,
+		    struct coopt_return * /*ret*/,
+		    struct coopt_state * /*state*/);
 
 #ifdef __cplusplus
 }

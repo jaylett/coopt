@@ -14,7 +14,7 @@ noinst_PROGRAMS = test
 
 ## --- Things to put in the library ---
 
-libcoopt_a_SOURCES = coopt.c sopt.c
+libcoopt_a_SOURCES = coopt.c sopt.c serror.c
 
 libcoopt_a_LIBADD = @LIBOBJS@
 

@@ -1,5 +1,5 @@
 /*
- * $Id: sopt.c,v 1.2 1999/06/03 13:18:40 james Exp $
+ * $Id: sopt.c,v 1.3 1999/08/10 15:28:42 james Exp $
  * sopt.c
  *
  * Implementation of coopt_sopt(), utility routine for coopt.
@@ -118,7 +118,7 @@ size_t coopt_sopt(char *buffer, size_t bufsize, struct coopt_return *ret,
      break;
 #ifdef COOPT_DEBUG
    default:
-     fprintf(stderr, "coopt internal error: coopt_[sf]opt() passed unknown result code\n");
+     fprintf(stderr, "coopt internal error: coopt_sopt() passed unknown result code %i\n", ret->result);
      break;
 #endif
   }
