@@ -1,5 +1,5 @@
 /*
- * $Id: coopt.h,v 1.7 2000/02/20 15:49:41 james Exp $
+ * $Id: coopt.h,v 1.8 2000/03/22 23:12:06 james Exp $
  * coopt.h
  *
  * Interface header file for coopt, the Tartarus option parsing library
@@ -316,9 +316,7 @@ struct coopt_state
   char const * const * argv;
   int char_within_arg; /* in the current implementation, <0 =>
 			* found the separator, and we're in the
-			* argument-only list. However this should
-			* not be relied on - see the manual for a
-			* better way of handling this requirement.
+			* argument-only list.
 			*/
   unsigned int skip_next_arg; /* non-zero to skip the next one on start of
 			       * processing */

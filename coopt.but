@@ -3,7 +3,7 @@
 \# Documentation source for coopt
 \# (c) Copyright James Aylett 1999-2000
 
-\versionid $Id: coopt.but,v 1.6 2000/02/13 21:06:35 james Exp $
+\versionid $Id: coopt.but,v 1.7 2000/03/22 23:12:06 james Exp $
 
 \define{coopt} co\u00F6{o}pt
 
@@ -21,7 +21,7 @@ considerable added functionality. There are other libraries available which
 attempt to do the same, the best known being GNU's \c{getopt()} replacement,
 which adds some much needed functionality to the POSIX specification; for a
 list of pros and cons of several libraries which implement options parsing,
-see \k{alternatives}.
+see the Frequently Asked Questions in \k{FAQ}.
 
 \H{terms} Terms and concepts
 
@@ -545,20 +545,12 @@ options may become valid or invalid.
 \c                                  */
 \c 
 \c   /* Ignore this if you're a user */
-\c   int argc;
-\c   char const * const * argv;
-\c   int char_within_arg; /* in the current implementation, <0 =>
-\c                         * found the separator, and we're in the
-\c                         * argument-only list. However this should
-\c                         * not be relied on - see the manual for a
-\c                         * better way of handling this requirement.
-\c                         */
-\c   unsigned int skip_next_arg; /* non-zero to skip the next one on start of
-\c                                * processing */
-\c   char const * last_marker; /* used with multiple short options in one
-\c                              * argument
-\c                              */
+\c   /* ... */
 \c };
+
+The last section, marked \c{/* ... */} is not intended for use outside
+\coopt. It is documented for the current version in
+\k{coopt-state-internals}, below.
 
 \S3{coopt-state-options} \c{options} and \c{num_options}
 
@@ -645,7 +637,9 @@ The default is \c{\{ "L--", "S-", NULL \}}.
 
 \C{Details} \coopt details
 
-FIXME: Going through what everything does, piece by piece.
+This section of the manual describes in detail what \coopt does, step
+by step. Note that these details may change in future versions, and
+are provided for information only (but see \k{badgers}).
 
 \H{internals} \coopt internals
 
@@ -663,14 +657,157 @@ internals change in the future.
 
 Currently \coopt has five badgers. The badgers themselves are gratuitous.
 
-FIXME: \\S level documentation of remaining internal structure stuff ...
+\S{coopt-state-internals} \c{coopt_state} internals
 
-FIXME: \\H level documentation of \coopt's parsing strategy, I guess ...
+After the "public" parts of \c{coopt_state} comes some \coopt-private
+data. These contain all of \coopt's private state, which in general
+you shouldn't touch from your program. However in some cases it can be
+useful to access them directly, to achieve rarely-required effects
+that are not directly supported by \coopt.
+
+Details given in this section should be considered entirely dependent
+on the number of badgers in \coopt (see \k{badgers}), even though some
+are much more susceptible to change than others.
+
+\c struct coopt_state
+\c {
+\c   /* ... */
+\c
+\c   /* Ignore this if you're a user */
+\c   int argc;
+\c   char const * const * argv;
+\c   int char_within_arg; /* in the current implementation, <0 =>
+\c                         * found the separator, and we're in the
+\c                         * argument-only list.
+\c                         */
+\c   unsigned int skip_next_arg; /* non-zero to skip the next one on start of
+\c                                * processing */
+\c   char const * last_marker; /* used with multiple short options in one
+\c                              * argument
+\c                              */
+\c };
+
+The section marked \c{/* ... */} is the main public data of
+\c{coopt_state}, and is documented in \k{coopt-state}, above.
+
+\S2{coopt-state-argc} \c{argc}
+
+This gives the number of command line elements left to process, and is
+decremented for each element processed. Once it has reached zero,
+\c{coopt()} will always return result code \c{COOPT_RESULT_END}.
+
+\S2{coopt-state-argv} \c{argv}
+
+This is a pointer to an array of the remaining command line elements
+to process. It is incremented for each element processed.
+
+\S2{coopt-state-char-within-arg} \c{char_within_arg}
+
+This is used in two situations. Firstly, if a command line element
+contains several short options, \c{char_within_arg} will give an
+offset into the character array pointed to by the \c{argv} member of
+\c{coopt_state}. Secondly, once the separator has been found in the
+command line, \c{char_within_arg} will be set to a negative number,
+and \c{coopt} will always return the next command line element as an
+argument with a result code of \c{COOPT_RESULT_OKAY}.
+
+\S2{coopt-state-skip-next-arg} \c{skip-next-arg}
+
+This is set if \coopt needs to skip the next command line element
+automatically (since, for instance, it has already been processed as a
+parameter to a previous option.
+
+The name of this member is slightly confusing, but since it's a
+\coopt-private member it is unlikely to change.
+
+\S2{coopt-state-last-marker} \c{last-marker}
+
+When \coopt finds a command line element that starts with a short
+option, it sets this member to the marker which starts that
+element. Hence if the element turns out to have multiple short
+options, each option can be returned with the marker that introduced
+that element.
+
+\H{coopt-parsing} \coopt processing details
+
+This section details the algorithm \coopt uses for processing command
+line elements. You should read through \k{coopt-state-internals} to be
+familiar with the private members of \c{coopt_state} that it uses
+before reading this section.
+
+\S{coopt-parsing-housekeeping} Housekeeping
+
+On every invocation of \c{coopt()}, \coopt first performs a number of
+housekeeping operations to ensure that it is being called sanely, and also to deal with some simple cases immediately.
+
+\b If \c{state} or \c{state->argv} is \c{NULL}, \c{coopt()} returns the result code \c{COOPT_RESULT_ERROR}. No further processing has been done, so the rest of the return structure is essentially useless.
+
+\b If \c{state->argc} is negative or equal to zero, \c{coopt()} returns the result code \c{COOPT_RESULT_END}.  No further processing has been done, so the rest of the \c{coopt_result} structure is essentially useless.
+
+\b If \c{state->char_within_arg} is negative, \coopt sets up the \c{coopt_result} structure to return \c{state->argv[0]} with result code \c{COOPT_RESULT_OKAY} (ie: returns \c{state->argv[0]} marked as an argument), and advances over the current command line element before returning.
+
+\b If necessary, \coopt skips the next command line element, according to the setting of \c{state->skip_next_arg}.
+
+\S{coopt-parsing-start-element} First pass on a command line element
+
+If this is the first pass on a command line element, the following applies. If it isn't (when multiple short options are found in a single command line element, see \k{coopt-parsing-finish-element}).
+
+\b If \c{state->separator} is non-\c{NULL} and the element matches it exactly, \coopt skips the current element, sets \c{state->char_within_arg} to \c{-1}, and recurses through \c{coopt(}} again to process the first argument.
+
+\b Next, \coopt searches through its markers list. If none start the current element, it is returned as an argument with result code \c{COOPT_RESULT_OKAY}.
+
+\b If the marker introduces short options, \c{state->last_marker} is set to it, \c{state->char_within_arg} is set to point beyond the marker, and \c{coopt()} returns through \c{coopt_shortopt()} - see \k{coopt-parsing-short}, below.
+
+\b If the marker introduces long options, \coopt will process the option appropriately. See \k{coopt-parsing-long}, below.
+
+\b If \coopt couldn't figure out whether the marker introduces short or long options, \c{coopt()} returns with result code \c{COOPT_RESULT_ERROR}. 
+
+\S{coopt-parsing-finish-element} Subsequent passes on a command line element
+
+If the start of a command line element has already been processed, it
+must contain several short options. Hence \c{state->last_marker} will
+be set, and \c{state->char_within_arg} will point to the next
+character in the element to process. \c{coopt()} will handle this
+simply by returning through \c{coopt_shortopt()} - see
+\k{coopt-parsing-short}, below.
+
+Note that this path is taken once when all short options in an element
+have already been processed; \c{coopt_shortopt()} advances to the next
+element and returns through \c{coopt()} when it finds that the next
+character to process is a \c{NUL}.
+
+\S{coopt-parsing-short} Parsing a short option
+
+Short options processing is handled in an internal function,
+\c{coopt_shortopt()}. It can find the next character it needs to consider using \c{state->char_within_arg}, which will have been set up previously. Explicitly, the next character is \c{state->argv[0][state->char_within_arg]}.
+
+\b If the next character to process is \c{NUL}, the current command
+line element (which \coopt has now processed all of) is skipped over, and
+\c{coopt_shortopt()} returns through \c{coopt()} to process the next
+element. \c{state->last_marker} and \c{state->char_within_arg} are
+reset at the same time.
+
+\b Next, \coopt looks through all options to find one whose short option character matches the character to process. If it can't find one, it returns with result code \c{COOPT_RESULT_BADOPTION}, setting \c{result.param} to the first character in the command line element it didn't understand (ie: the character it was trying to process). It increments \c{state->char_within_arg} - note that this means that programs that don't abort on \c{COOPT_RESULT_BADOPTION} will allow \coopt to process as many short options as it understands, merely dropping ones it doesn't.
+
+\b Next, \coopt increments \c{state->char_within_arg} so that subsequent processing continues in the right place. (This allows \c{coopt_shortopt()} to return at any point, without having to worry about tidying up for the next pass.)
+
+\b \c{result.opt} is set to the option \coopt found.
+
+\b If the option has \c{COOPT_REQUIRED_PARAM} set, and if the end of the current command line element has been reached or \c{state->flags.allow_mix_short_params} is set, \coopt will take the parameter from the subsequent command line element, returning with result code \c{COOPT_RESULT_MISSINGPARAM} if there aren't any left, and with result code \c{COOPT_RESULT_MULTIMIXED} if a short option in the same command line element has already had a parameter - it checks this by seeing if \c{state->skip_next_arg} is positive (you can hence allow multi-mixed behaviour by setting \c{state->skip_next_arg} to zero before each call to \c{coopt()}). If it hasn't encountered either of those situations, it sets \c{state->skip_next_arg} to \c{1} and \c{result.param} to the next command line element, and returns with result code \c{COOPT_RESULT_OKAY}.
+
+\b If the option has \c{COOPT_REQUIRED_PARAM} set, and we both haven't reached the end of the current command line element and \c{state->flags.allow_mix_short_params} isn't set, the rest of the current command line element is taken as an inline parameter to the option. \coopt advances over that element, resetting \c{state->char_within_arg} and \c{state->last_marker} and returning with result code \c{COOPT_RESULT_OKAY}.
+
+\b If the option has \c{COOPT_NO_PARAM} set, \c{coopt_shortopt()} simply returns with the \c{coopt_result} structure as already set up. Since \c{coopt_shortopt()} is always called from \c{coopt()} as \c{coopt()} itself is returning, this returns the appropriate result to the caller.
+
+\S{coopt-parsing-long} Parsing a long option
+
+FIXME: This bit's long and complex, and I haven't got round to it
+yet. The source code's quite clean, though ... :-)
 
 \C{Funky stuff} Examples of usage
 
-\# FIXME: A load of examples of usage. Lift a lot of these from the test cases, of
-\# course.
+\# FIXME: A load of examples of usage. Lift a lot of these from the test
+\# cases, of course.
 
 \H{howto} How do I ... ?
 
@@ -703,9 +840,11 @@ Currently we are considering producing \coopt equivalents for PERL and Java.
 
 \H{credits} Credits
 
-\#{}\coopt was designed by James Aylett, Simon Tatham, Owen Dunn, Chris Emerson
-and Ben Harris. All coding by James Aylett. The name \coopt was thought up
-by Owen, and the diaresis was added by Ben :-)
+\#{}\coopt was designed by James Aylett, Simon Tatham, Owen Dunn,
+Chris Emerson, Ben Harris and Richard Boulton. Main coding by James
+Aylett, with \c{autoconf} et al assistance by Richard Boulton. The
+name \coopt was thought up by Owen, and the diaresis was added by Ben
+:-)
 
 \A{Info} Further information
 
@@ -775,14 +914,12 @@ options processing, it may not be the best choice for you.
 \S{faq-whynotmdwopt} Why not use \c{mdwopt()}?
 
 \# FIXME: check mdw's website, and check with him that he doesn't mind
-\# being referenced here.
+\# being referenced here. And probably fix this up a bit, too.
 
 Mark Wooding has written \c{mdwopt()}, which is part of his mLib library of
 "various useful things". It is again designed so it can be used as a drop-in
 replacement for \c{getopt()}; however it provides additional functionality
 to avoid global state, allowing the caller to handle all memory requirements.
-
-\# FIXME: more stuff here ... ?
 
 Again, it is limited in its reconfigurability, and long options are
 configured in an ugly manner.
@@ -809,7 +946,7 @@ See the HOWTO section of the manual, in \k{howto}.
 
 \S{faq-obtaining} How do I get \coopt?
 
-\# This doesn't exist. So, erm ... sort something out somewhere.
+\# FIXME: This doesn't exist. So, erm ... sort something out somewhere.
 
 The official \coopt web site is
 \W{http://www.tartarus.org/projects/coopt/}{http://www.tartarus.org/projects/coopt/}.
@@ -826,9 +963,3 @@ tree.
 Tartarus is a tight-knit group of hackery, documentary, and other
 layabout-ery type people, most of whom are based in Cambridge, UK. It is
 intended to embrace any computer-based projects we think are interesting.
-
-\H{alternatives} Alternatives to \coopt
-
-Point-by-point comparison of pros and cons of each solution.
-
-\# FIXME: write, or change reference at start to the FAQ section ... ?
