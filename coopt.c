@@ -1,5 +1,5 @@
 /*
- * $Id: coopt.c,v 1.4 2000/02/13 21:06:35 james Exp $
+ * $Id: coopt.c,v 1.5 2001/06/05 16:29:32 james Exp $
  * coopt.c
  *
  * Implementation file for coopt, the Tartarus option parsing library
@@ -183,8 +183,8 @@ struct coopt_return coopt(struct coopt_state * state)
     switch (state->markers[marker][0])
     {
       /* Put it here ... it's ick, but it'll do for the moment */
-      int length_to_test;
-      int i;
+      unsigned int length_to_test;
+      unsigned int i;
       struct coopt_option const *opt;
       int ambiguous;
 
@@ -403,7 +403,7 @@ struct coopt_return coopt(struct coopt_state * state)
  */
 static struct coopt_return coopt_shortopt(struct coopt_state *state)
 {
-  int opt;
+  unsigned int opt;
   struct coopt_return result;
   result.result=COOPT_RESULT_OKAY;
   result.ambigresult=COOPT_RESULT_OKAY;
