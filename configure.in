@@ -1,12 +1,11 @@
-AC_INIT(coopt.c)
-AM_INIT_AUTOMAKE(coopt, 1.0.0)
+AC_INIT(coopt.h)
+AM_INIT_AUTOMAKE(libcoopt, 1.0.0)
 
 dnl We want to have things in /usr/lib, /usr/include, etc.
 AC_PREFIX_DEFAULT(/usr)
 
 dnl Find the programs we need for building, and configure as necessary
 AC_PROG_CC
-mdw_GCC_FLAGS
 AC_CHECK_PROG(AR, ar, ar)
 AC_PROG_RANLIB
 AC_PROG_INSTALL
