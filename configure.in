@@ -1,4 +1,4 @@
-AC_INIT (coopt.c)
+AC_INIT(coopt.c)
 AM_INIT_AUTOMAKE(coopt, 1.0.0)
 
 dnl We want to have things in /usr/lib, /usr/include, etc.
@@ -9,7 +9,7 @@ AC_PROG_CC
 mdw_GCC_FLAGS
 AC_CHECK_PROG(AR, ar, ar)
 AC_PROG_RANLIB
-dnl AC_PROG_INSTALL
+AC_PROG_INSTALL
 
 dnl Look for library and header-related things
 AC_HEADER_STDC
