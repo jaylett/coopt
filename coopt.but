@@ -3,7 +3,7 @@
 \# Documentation source for coopt
 \# (c) Copyright James Aylett 1999-2000
 
-\versionid $Id: coopt.but,v 1.3 2000/01/03 01:06:38 james Exp $
+\versionid $Id: coopt.but,v 1.4 2000/01/20 23:28:49 james Exp $
 
 \define{coopt} co\u00F6{o}pt
 
@@ -59,7 +59,7 @@ so \c{--file=name} is the long option \c{file} with the parameter \c{name}).
 
 The defaults for \coopt are for the markers to be \c{-} for short options
 and \c{--} for long options, and for the separator to be \c{--} (as for
-POSIX.2 \c{getopt}). For information about other defaults, so
+POSIX.2 \c{getopt}). For information about other defaults, see
 \k{coopt-init}.
 
 \C{Installing} Installing \coopt
@@ -79,12 +79,12 @@ The \c{&& make install} part at the end may be omitted if you don't want to
 install \coopt for general use, but merely want to build against it
 yourself.
 
-\#{}\coopt will install in \c{/usr} by default (which will probably require
+\#{}\coopt will install in \c{/usr/local} by default (which will probably require
 \c{root} access); however \coopt's \c{configure} script is a normal GNU one,
 and so you can alter the install prefix using the \c{--prefix} option. For
 instance:
 
-\c ./configure --prefix=/usr/local
+\c ./configure --prefix=/usr
 
 You should use \c{./configure --help} for a complete list of options supported.
 
@@ -115,24 +115,28 @@ and structure definitions needed, and the linker will need to know to link
 in the \c{libcoopt.a} library which contains the \coopt routines.
 
 By default, \coopt will be installed with the header file in
-\c{/usr/local/include/libcoopt/}, and the library in \c{/usr/local/lib/}. If
+\c{/usr/local/include/libcoopt}, and the library in \c{/usr/local/lib}. If
 you have overridden this, or your system administrator has installed \coopt
 in a different place, you will have to adapt the following to your
-situation.
+situation. (A common alteration is to put the header file in
+\c{/usr/include} and the library in \c{/lib}.
 
 \S{compiler} Compiler
 
-Typically, your compiler will look in \c{/usr/include/} for header files, so
-one way of including the header file is to use:
+Modern compiler setups will typically look in \c{/usr/local/include} for
+header files, so one way of including the header file is to use:
 
 \c #include <libcoopt/coopt.h>
 
-Alternatively, you could set your compiler to search
-\c{/usr/include/libcoopt/} for header files, and simply use:
+If this doesn't work, you may need to set your compiler to search
+\c{/usr/local/include} for header files. Alternatively, you could set your
+compiler to search \c{/usr/local/include/libcoopt} for header files,
+and simply use:
 
 \c #include <coopt.h>
 
-For GNU \c{gcc}, \c{-I /usr/include/libcoopt/} should do the trick.
+For GNU \c{gcc}, \c{-I /usr/local/include} or
+\c{-I /usr/local/include/libcoopt} respectively should do the trick.
 
 \S{linker} Linker
 
@@ -203,9 +207,9 @@ that \coopt will recognise and parse for you.
 \c   char short_option; /* 0 if no short equivalent */
 \c   unsigned int has_param; /* COOPT_NO_PARAM or COOPT_REQUIRED_PARAM only. */
 \c   char const * long_option; /* full text of long option */
-\c   void * private; /* can leave out completely in initialiser;
-\c                    * this is private to the user - coopt won't touch it
-\c                    */
+\c   void * data; /* can leave out completely in initialiser;
+\c                 * this is private to the user - coopt won't touch it
+\c                 */
 \c };
 
 \c{short_option} should contain either \c{0}, or the character used to
@@ -225,7 +229,7 @@ parameters, although it does allow you to implement them with fairly minimal
 effort on your part. See \k{howto-optional-params} for information on how to
 do this.
 
-\c{private} is a private field for your use; \coopt will ignore it
+\c{data} is a private field for your use; \coopt will ignore it
 completely. You can use it to pass additional information about this option
 to your handling routines; for instance, you might want to put a function
 pointer in here to enable several options to be parsed by the same code,
@@ -556,7 +560,7 @@ option is not set, \c{-vfh <file>} would be equivalent to \c{-v -f h --
 
 The default is clear.
 
-\S4{coopt-state-allow-long-eq-params}
+\S4{coopt-state-allow-long-eq-params} \c{allow_long_eq_params}
 
 If this is set, long options with parameters of the form \c{--input=<file>}
 are allowed. If clear, it would be treated as a single long option with text
@@ -564,7 +568,7 @@ are allowed. If clear, it would be treated as a single long option with text
 
 The default is set.
 
-\S4{coopt-state-allow-long-sep-params}
+\S4{coopt-state-allow-long-sep-params} \c{allow_long_sep_params}
 
 If this is set, long options with parameters of the form \c{--input <file>}
 are allowed. If clear, it would be treated as a long option with text
@@ -572,28 +576,28 @@ are allowed. If clear, it would be treated as a long option with text
 
 The default is set.
 
-\S4{coopt-state-allow-long-opts-breved}
+\S4{coopt-state-allow-long-opts-breved} \c{allow_long_opts_breved}
 
 If this is set, long options may be abbreviated.
 
 The default is clear.
 
-\S3{coopt-state-separator}
+\S3{coopt-state-separator} \c{separator}
 
 This specifies the string to be used as the argument separator: the first
 command element which matches this string exactly is skipped, and all
 subsequent command elements are arguments.
 
-The default is "--". It is inadvisable to change this.
+The default is \c{--}. It is inadvisable to change this.
 
-\S3{coopt-state-long-eq}
+\S3{coopt-state-long-eq} \c{long_eq}
 
 This specifies the eq-separator: the string to be used to separate the
 option name from the parameter for inline parameters to long options.
 
-The default is "=".
+The default is \c{=}.
 
-\S3{coopt-state-markers}
+\S3{coopt-state-markers} \c{markers}
 
 This specifies the markers to be used in looking for options. It should be
 an array, terminated with a \c{NULL} element. Each non-\c{NULL} element is a
@@ -614,7 +618,7 @@ The default is \c{\{ "L--", "S-", NULL \}}.
 
 \C{Details} \coopt details
 
-Going through what everything does, piece by piece.
+FIXME: Going through what everything does, piece by piece.
 
 \H{internals} \coopt internals
 
@@ -631,6 +635,10 @@ knowledge of the internals, and simply not have it compile if these
 internals change in the future.
 
 Currently \coopt has five badgers. The badgers themselves are gratuitous.
+
+FIXME: \S level documentation of remaining internal structure stuff ...
+
+FIXME: \H level documentation of \coopt's parsing strategy, I guess ...
 
 \C{Funky stuff} Examples of usage
 
@@ -660,7 +668,7 @@ From here you can download the latest version of \coopt, from
 Bug reports, feature request and so on should be sent to
 \W{mailto:coopt@bugs.tartarus.org}{coopt@bugs.tartarus.org}. Note that in
 general we consider the functionality of \coopt to be complete, and are
-certainly aligned against adding "syntactic sugar" - easier ways of
+certainly aligned against adding \q{syntactic sugar} - easier ways of
 achieving things that are already possible, albeit perhaps in a slightly
 convoluted fashion.
 
@@ -684,8 +692,8 @@ programmers. It gets technical rather quickly.
 \#{}\coopt is a command line options parsing library; it helps programs to
 handle options in a consistent way. It has been designed to be consistent
 and easy to use, as well as very flexible. By default it implements options
-in the style of GNU \c{getopt()} (ie: "-" introduces a short option, and
-"--" introduces a long option).
+in the style of GNU \c{getopt()} (ie: \c{-} introduces a short option, and
+\c{--} introduces a long option).
 
 \S{faq-whynotgetopt} Why not use \c{getopt()}?
 
@@ -791,5 +799,4 @@ intended to embrace any computer-based projects we think are interesting.
 
 Point-by-point comparison of pros and cons of each solution.
 
-\# FIXME: write
-
+\# FIXME: write, or change reference at start to the FAQ section ... ?

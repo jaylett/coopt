@@ -1,5 +1,5 @@
 /*
- * $Id: coopt.h,v 1.4 2000/01/02 23:05:00 james Exp $
+ * $Id: coopt.h,v 1.5 2000/01/20 23:28:50 james Exp $
  * coopt.h
  *
  * Interface header file for coopt, the Tartarus option parsing library
@@ -47,9 +47,9 @@ struct coopt_option
   char short_option; /* 0 if no short equivalent */
   unsigned int has_param; /* COOPT_NO_PARAM or COOPT_REQUIRED_PARAM only. */
   char const * long_option; /* full text of long option */
-  void * private; /* can leave out completely in initialiser;
-  		   * this is private to the user - coopt won't touch it
-  		   */
+  void * data; /* can leave out completely in initialiser;
+		* this is private to the user - coopt won't touch it
+		*/
 };
 
 #define COOPT_NO_PARAM		(0)

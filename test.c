@@ -1,5 +1,5 @@
 /*
- * $Id: test.c,v 1.3 2000/01/02 23:05:01 james Exp $
+ * $Id: test.c,v 1.4 2000/01/20 23:28:50 james Exp $
  * test.c
  *
  * coopt test rig
@@ -138,12 +138,12 @@ void expect_opt_param_marker(struct coopt_state *state, int result,
 }
 
 void expect_private_marker(struct coopt_state *state, int result,
-                         void *private, char *marker)
+			   void *data, char *marker)
 {
   struct coopt_return ret;
 
   ret=coopt(state);
-  test_test (ret.result==result && ret.opt->private==private &&
+  test_test (ret.result==result && ret.opt->data==data &&
   	     test_string(ret.marker, marker));
 }
 
@@ -155,7 +155,7 @@ void expect_function_marker(struct coopt_state *state, int result,
   char *(*noparam)();
 
   ret=coopt(state);
-  noparam=(char *(*)())ret.opt->private;
+  noparam=(char *(*)())ret.opt->data;
   r = (*noparam)();
   test_test (ret.result==result && test_string(r, fnresult) &&
   	     test_string(ret.marker, marker));
@@ -169,7 +169,7 @@ void expect_function_param_marker(struct coopt_state *state, int result,
   char *(*hasparam)(char const *);
 
   ret=coopt(state);
-  hasparam=(char *(*)(char const *))ret.opt->private;
+  hasparam=(char *(*)(char const *))ret.opt->data;
   r = (*hasparam)(ret.param);
   test_test (ret.result==result && test_string(r, fnresult) &&
              test_string(ret.param, param) &&
@@ -202,12 +202,12 @@ char *taciturn()
 }
 
 void expect_private_param_marker(struct coopt_state *state, int result,
-                         void *private, char *param, char *marker)
+				 void *data, char *param, char *marker)
 {
   struct coopt_return ret;
 
   ret=coopt(state);
-  test_test (ret.result==result && ret.opt->private==private &&
+  test_test (ret.result==result && ret.opt->data==data &&
              test_string(ret.param, param) &&
   	     test_string(ret.marker, marker));
 }
@@ -244,7 +244,7 @@ int main(int argc, char const * const * argv)
   option[0].short_option='v';
   option[0].has_param=COOPT_NO_PARAM;
   option[0].long_option="verbose";
-  option[0].private=0;
+  option[0].data=0;
 
   coopt_init(&state, option, 1, argc-1, argv+1);
   do
@@ -266,22 +266,22 @@ int main(int argc, char const * const * argv)
   option[1].short_option='f';
   option[1].has_param=COOPT_REQUIRED_PARAM;
   option[1].long_option="file";
-  option[1].private=0;
+  option[1].data=0;
 
   option[2].short_option='s';
   option[2].has_param=COOPT_NO_PARAM;
   option[2].long_option="silent";
-  option[2].private=0;
+  option[2].data=0;
 
   option[3].short_option='g';
   option[3].has_param=COOPT_NO_PARAM;
   option[3].long_option=NULL;
-  option[3].private=0;
+  option[3].data=0;
 
   option[4].short_option=0;
   option[4].has_param=COOPT_NO_PARAM;
   option[4].long_option="visual";
-  option[4].private=0;
+  option[4].data=0;
 
   /* option[5] is used by some tests */
 
@@ -543,7 +543,7 @@ int main(int argc, char const * const * argv)
   option[5].short_option='v';
   option[5].has_param=COOPT_NO_PARAM;
   option[5].long_option="verbose";
-  option[5].private=0;
+  option[5].data=0;
   init_test(&state,option,6,"two identical long options",
        "arg0 --verbose arg1 --invalid -- arg2 --arg3");
   expect_opt_param(&state,COOPT_RESULT_OKAY, NULL, "arg0");
@@ -946,27 +946,27 @@ int main(int argc, char const * const * argv)
   option[0].short_option=0;
   option[0].has_param=COOPT_NO_PARAM;
   option[0].long_option="verbose";
-  option[0].private=(void *)1;
+  option[0].data=(void *)1;
 
   option[1].short_option=0;
   option[1].has_param=COOPT_REQUIRED_PARAM;
   option[1].long_option="file";
-  option[1].private=(void *)2;
+  option[1].data=(void *)2;
 
   option[2].short_option=0;
   option[2].has_param=COOPT_NO_PARAM;
   option[2].long_option="silent";
-  option[2].private=(void *)3;
+  option[2].data=(void *)3;
 
   option[3].short_option=0;
   option[3].has_param=COOPT_NO_PARAM;
   option[3].long_option="taciturn";
-  option[3].private=(void *)3;
+  option[3].data=(void *)3;
 
   option[4].short_option=0;
   option[4].has_param=COOPT_REQUIRED_PARAM;
   option[4].long_option="output";
-  option[4].private=(void *)2;
+  option[4].data=(void *)2;
 
   init("cast int", "--verbose --silent --file <param> --output=<param2> --taciturn");
   expect_private_marker(&state,COOPT_RESULT_OKAY,(void *)1,"L--");
@@ -977,11 +977,11 @@ int main(int argc, char const * const * argv)
   expect(&state,COOPT_RESULT_END);
   test_out();
 
-  option[0].private=(void *)verbose;
-  option[1].private=(void *)file;
-  option[2].private=(void *)silent;
-  option[3].private=(void *)taciturn;
-  option[4].private=(void *)file;
+  option[0].data=(void *)verbose;
+  option[1].data=(void *)file;
+  option[2].data=(void *)silent;
+  option[3].data=(void *)taciturn;
+  option[4].data=(void *)file;
 
   init("function pointer", "--verbose --silent --file <param> --output=<param2> --taciturn");
   expect_function_marker(&state,COOPT_RESULT_OKAY,"verbose","L--");
